@@ -17,46 +17,36 @@ export function Header({ syncing }: HeaderProps) {
   const baseUrl = import.meta.env.BASE_URL;
 
   return (
-    <header className="bg-white rounded-xl shadow-lg p-6 mb-6">
-      <div className="flex items-center gap-5">
+    <header className="bg-white rounded-xl shadow-lg p-4 sm:p-6 mb-6">
+      {/* Top row: Photo + Info + Countdown */}
+      <div className="flex items-start gap-4">
         {/* Profile photo */}
         <img
           src={`${baseUrl}tim-lisbon-run.png`}
           alt={trainingPlan.athlete}
-          className="w-20 h-20 rounded-2xl object-cover shadow-md flex-shrink-0"
+          className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl object-cover shadow-md flex-shrink-0"
         />
 
         {/* Main info */}
         <div className="flex-1 min-w-0">
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-800">
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800 leading-tight">
             Istrski polmaraton
           </h1>
-          <p className="text-blue-600 font-medium mt-0.5">{trainingPlan.athlete}</p>
-
-          {/* Race details row */}
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-sm">
-            <span className="text-gray-600">
-              <span className="font-medium">12. april 2026</span>
-            </span>
-            <span className="text-gray-400">•</span>
-            <span className="text-gray-600">Koper, Slovenija</span>
-          </div>
+          <p className="text-blue-600 font-medium text-sm sm:text-base">{trainingPlan.athlete}</p>
+          <p className="text-sm text-gray-600 mt-1">12. april 2026</p>
+          <p className="text-sm text-gray-500">Koper, Slovenija</p>
         </div>
 
-        {/* Countdown & goal */}
+        {/* Countdown */}
         <div className="flex-shrink-0 text-right">
-          {/* Days countdown */}
-          <div className="mb-2">
-            <div className="text-3xl md:text-4xl font-bold text-blue-600">
-              {daysUntilRace}
-            </div>
-            <div className="text-xs text-gray-500 uppercase tracking-wide">
-              dni do tekme
-            </div>
+          <div className="text-3xl sm:text-4xl font-bold text-blue-600">
+            {daysUntilRace}
           </div>
-
+          <div className="text-xs text-gray-500 uppercase tracking-wide">
+            dni do tekme
+          </div>
           {/* Target pace */}
-          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-blue-500 to-green-500 rounded-full">
+          <div className="inline-flex items-center gap-1 px-2.5 py-1 mt-2 bg-gradient-to-r from-blue-500 to-green-500 rounded-full">
             <span className="text-white text-sm font-bold">4:30</span>
             <span className="text-white/80 text-xs">/km</span>
           </div>

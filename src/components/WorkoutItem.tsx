@@ -210,55 +210,59 @@ export function WorkoutItem({
         : 'border-gray-200'
     }`}>
       {/* Main row */}
-      <div className="flex items-center gap-3 p-4">
-        {/* Checkbox / Checkmark */}
-        <button
-          onClick={handleToggleComplete}
-          className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
-            progress.completed
-              ? 'bg-green-500 border-green-500 text-white'
-              : 'border-gray-300 hover:border-green-400'
-          }`}
-        >
-          {progress.completed && (
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-            </svg>
-          )}
-        </button>
-
-        {/* Day and date */}
-        <div className="flex-shrink-0 w-16">
-          <div className="font-bold text-gray-900">{day.day}</div>
-          <div className="text-sm text-gray-500">{dateStr}</div>
-        </div>
-
-        {/* Activity badge - shows actual selection or planned */}
-        <span className={`px-2 py-1 rounded-full text-xs font-medium flex-shrink-0 ${badgeInfo.color}`}>
-          {badgeInfo.label}
-        </span>
-
-        {/* Workout description */}
-        <div className="flex-1 min-w-0">
-          <p className="text-sm text-gray-700">
-            {displayedWorkout}
-          </p>
-        </div>
-
-        {/* Expand button */}
-        <button
-          onClick={() => setIsExpanded(!isExpanded)}
-          className="p-2 text-gray-400 hover:text-gray-600 flex-shrink-0"
-        >
-          <svg
-            className={`w-5 h-5 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
+      <div className="p-4">
+        {/* Top row: checkbox, day/date, badge, expand */}
+        <div className="flex items-center gap-3">
+          {/* Checkbox / Checkmark */}
+          <button
+            onClick={handleToggleComplete}
+            className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
+              progress.completed
+                ? 'bg-green-500 border-green-500 text-white'
+                : 'border-gray-300 hover:border-green-400'
+            }`}
           >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-          </svg>
-        </button>
+            {progress.completed && (
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+            )}
+          </button>
+
+          {/* Day and date */}
+          <div className="flex-shrink-0">
+            <div className="font-bold text-gray-900">{day.day}</div>
+            <div className="text-sm text-gray-500">{dateStr}</div>
+          </div>
+
+          {/* Activity badge - shows actual selection or planned */}
+          <span className={`px-2 py-1 rounded-full text-xs font-medium flex-shrink-0 ${badgeInfo.color}`}>
+            {badgeInfo.label}
+          </span>
+
+          {/* Spacer */}
+          <div className="flex-1" />
+
+          {/* Expand button */}
+          <button
+            onClick={() => setIsExpanded(!isExpanded)}
+            className="p-2 text-gray-400 hover:text-gray-600 flex-shrink-0"
+          >
+            <svg
+              className={`w-5 h-5 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Workout description - full width below */}
+        <p className="text-sm text-gray-700 mt-2 ml-9">
+          {displayedWorkout}
+        </p>
       </div>
 
       {/* Logged data summary (if any) - when collapsed */}
