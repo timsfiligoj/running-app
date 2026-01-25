@@ -13,12 +13,15 @@ export function Header({ syncing }: HeaderProps) {
   const diffTime = raceDate.getTime() - today.getTime();
   const daysUntilRace = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
+  // Use BASE_URL for GitHub Pages compatibility
+  const baseUrl = import.meta.env.BASE_URL;
+
   return (
     <header className="bg-white rounded-xl shadow-lg p-6 mb-6">
       <div className="flex items-center gap-5">
         {/* Profile photo */}
         <img
-          src="/tim-lisbon-run.png"
+          src={`${baseUrl}tim-lisbon-run.png`}
           alt={trainingPlan.athlete}
           className="w-20 h-20 rounded-2xl object-cover shadow-md flex-shrink-0"
         />
@@ -36,7 +39,7 @@ export function Header({ syncing }: HeaderProps) {
               <span className="font-medium">12. april 2026</span>
             </span>
             <span className="text-gray-400">•</span>
-            <span className="text-gray-600">Pula, Hrvaška</span>
+            <span className="text-gray-600">Koper, Slovenija</span>
           </div>
         </div>
 
