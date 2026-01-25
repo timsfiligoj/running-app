@@ -202,9 +202,13 @@ function App() {
         <RaceStrategy strategy={trainingPlan.raceStrategy} />
 
         {/* Footer */}
-        <footer className="text-center mt-12 py-6 text-sm text-gray-500">
-          <p>Istrski polmaraton 2026 - Priprava na sub-1:35</p>
-          <p className="text-xs mt-1 text-gray-400">Sinhronizacija med napravami omogočena</p>
+        <footer className="text-center mt-12 py-8">
+          <div className="max-w-md mx-auto">
+            <p className="text-lg italic text-gray-500 font-light">
+              "Your only limit is the one you accept."
+            </p>
+            <div className="mt-3 w-12 h-0.5 bg-gradient-to-r from-blue-400 to-green-400 mx-auto rounded-full"></div>
+          </div>
         </footer>
       </div>
     </div>
