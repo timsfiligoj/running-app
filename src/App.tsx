@@ -130,6 +130,7 @@ function App() {
 
   const totalWorkouts = trainingPlan.weeks.reduce((acc, week) => acc + week.days.length, 0);
   const completedWorkouts = Object.values(progress).filter((p) => p.completed).length;
+  const totalKm = Object.values(progress).reduce((acc, p) => acc + (p.distanceKm || 0), 0);
 
   if (loading) {
     return (
@@ -173,17 +174,17 @@ function App() {
         {/* Header */}
         <header className="text-center mb-8">
           <h1 className="text-3xl md:text-4xl font-bold text-gray-800 mb-2">
-            Tekaški Načrt
+            Istrski maraton 2026
           </h1>
           <p className="text-lg text-blue-600 font-medium">{trainingPlan.athlete}</p>
-          <p className="text-gray-600 mt-2">{trainingPlan.goal}</p>
+          <p className="text-gray-600 mt-2">Cilj: sub 1:35</p>
           {syncing && (
             <p className="text-xs text-gray-400 mt-1">Sinhroniziram...</p>
           )}
         </header>
 
         {/* Progress Bar */}
-        <ProgressBar completed={completedWorkouts} total={totalWorkouts} />
+        <ProgressBar completed={completedWorkouts} total={totalWorkouts} totalKm={totalKm} />
 
         {/* Weeks Accordion */}
         <div className="space-y-4">

@@ -1,9 +1,10 @@
 interface ProgressBarProps {
   completed: number;
   total: number;
+  totalKm: number;
 }
 
-export function ProgressBar({ completed, total }: ProgressBarProps) {
+export function ProgressBar({ completed, total, totalKm }: ProgressBarProps) {
   const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
 
   return (
@@ -20,6 +21,15 @@ export function ProgressBar({ completed, total }: ProgressBarProps) {
           style={{ width: `${percentage}%` }}
         />
       </div>
+
+      {/* Total kilometers */}
+      <div className="mt-4 pt-4 border-t border-gray-100">
+        <div className="flex items-center justify-between">
+          <span className="text-sm text-gray-600">Skupaj pretečeno</span>
+          <span className="text-lg font-bold text-blue-600">{totalKm.toFixed(1)} km</span>
+        </div>
+      </div>
+
       {percentage === 100 && (
         <p className="text-center text-green-600 font-semibold mt-3">
           Odlično! Vsi treningi opravljeni!
