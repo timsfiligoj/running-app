@@ -30,7 +30,7 @@ export function Header({ syncing }: HeaderProps) {
         {/* Main info */}
         <div className="flex-1 min-w-0">
           <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800 leading-tight">
-            Istrski polmaraton
+            26. Istrski polmaraton
           </h1>
           <p className="text-blue-600 font-medium text-sm sm:text-base">{trainingPlan.athlete}</p>
           <p className="text-sm text-gray-600 mt-1">12. april 2026</p>
@@ -48,7 +48,7 @@ export function Header({ syncing }: HeaderProps) {
           {/* Target pace */}
           <div className="inline-flex items-center gap-1 px-2.5 py-1 mt-2 bg-gradient-to-r from-blue-500 to-green-500 rounded-full">
             <span className="text-white text-sm font-bold">4:30</span>
-            <span className="text-white/80 text-xs">/km</span>
+            <span className="text-white/80 text-xs">min/km</span>
           </div>
         </div>
       </div>
