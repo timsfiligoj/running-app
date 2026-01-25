@@ -1,0 +1,43 @@
+Ustvari React + Vite + Tailwind CSS aplikacijo za sledenje tekaškim treningom.
+
+STRUKTURA:
+- src/App.jsx - glavna komponenta
+- src/data/trainingPlan.js - podatki načrta (JSON ki ga bom prilepil)
+- src/components/WeekCard.jsx - prikaz tedna
+- src/components/WorkoutItem.jsx - prikaz posameznega treninga
+- src/hooks/useLocalStorage.js - hook za shranjevanje v localStorage
+
+FUNKCIONALNOSTI:
+1. Accordion prikaz po tednih - klik na teden ga razširi/zapre
+2. Checkbox za označitev "opravljeno" pri vsakem treningu
+3. Ikona svinčnika za urejanje - ko kliknem, se odpre textarea kjer lahko vpišem kaj sem dejansko naredil
+4. Progress bar na vrhu ki kaže % opravljenih treningov
+5. Barvno kodirani tipi treningov z Tailwind:
+   - intervals: bg-red-100 text-red-800
+   - tempo: bg-yellow-100 text-yellow-800
+   - easy: bg-green-100 text-green-800
+   - long: bg-blue-100 text-blue-800
+   - hills: bg-orange-100 text-orange-800
+   - strength: bg-purple-100 text-purple-800
+   - rest: bg-gray-100 text-gray-600
+   - test: bg-pink-100 text-pink-800
+   - race: bg-amber-200 text-amber-900
+   - activation: bg-teal-100 text-teal-800
+
+6. Na dnu: sekcija "Strategija za tekmo" z nasveti za pacing in prehrano
+7. Vse v slovenščini
+
+SHRANJEVANJE:
+- Uporabi localStorage za shranjevanje:
+  - katere treninge sem označil kot opravljene
+  - moje zapiske kaj sem dejansko naredil (če sem uredil trening)
+- Ob refreshu strani se mora vse ohraniti
+
+DESIGN:
+- Čist, moderen design
+- Bela podlaga, zaobljeni koti
+- Responsiven (deluje na telefonu)
+
+Ko končaš, mi povej kako zaženem app z npm run dev.
+
+Podatke načrta bom prilepil v naslednji poroki.
