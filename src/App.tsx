@@ -3,7 +3,6 @@ import { trainingPlan } from './data/trainingPlan';
 import { ProgressData, WorkoutProgress } from './types';
 import { ProgressBar } from './components/ProgressBar';
 import { WeekAccordion } from './components/WeekAccordion';
-import { RaceStrategy } from './components/RaceStrategy';
 import { supabase } from './lib/supabase';
 
 interface DbRow {
@@ -197,9 +196,6 @@ function App() {
             />
           ))}
         </div>
-
-        {/* Race Strategy */}
-        <RaceStrategy strategy={trainingPlan.raceStrategy} />
 
         {/* Footer */}
         <footer className="text-center mt-12 py-8">
