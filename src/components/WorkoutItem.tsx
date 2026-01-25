@@ -53,30 +53,26 @@ const activityTypeColors: Record<ActivityType, string> = {
   other: 'bg-slate-100 text-slate-700',
 };
 
-const plannedTypeColors: Record<string, string> = {
-  intervals: 'bg-red-100 text-red-700',
-  tempo: 'bg-yellow-100 text-yellow-700',
-  easy: 'bg-green-100 text-green-700',
-  long: 'bg-blue-100 text-blue-700',
-  hills: 'bg-orange-100 text-orange-700',
-  strength: 'bg-purple-100 text-purple-700',
-  rest: 'bg-gray-100 text-gray-600',
-  test: 'bg-pink-100 text-pink-700',
-  race: 'bg-amber-100 text-amber-700',
-  activation: 'bg-cyan-100 text-cyan-700',
-};
+// Map planned workout type to activity type and run type
+const getDefaultsFromPlannedType = (plannedType: string): { activityType: ActivityType; runType?: RunType } => {
+  const runTypes: string[] = ['intervals', 'tempo', 'easy', 'long', 'hills', 'test', 'race', 'activation'];
 
-const plannedTypeLabels: Record<string, string> = {
-  intervals: 'Intervali',
-  tempo: 'Tempo',
-  easy: 'Lahek',
-  long: 'Dolgi',
-  hills: 'Klanci',
-  strength: 'Moč',
-  rest: 'Počitek',
-  test: 'Test',
-  race: 'Tekma',
-  activation: 'Aktivacija',
+  if (runTypes.includes(plannedType)) {
+    return {
+      activityType: 'run',
+      runType: plannedType === 'activation' ? 'easy' : plannedType as RunType,
+    };
+  }
+
+  if (plannedType === 'strength') {
+    return { activityType: 'strength' };
+  }
+
+  if (plannedType === 'rest') {
+    return { activityType: 'rest' };
+  }
+
+  return { activityType: 'other' };
 };
 
 export function WorkoutItem({
@@ -106,28 +102,29 @@ export function WorkoutItem({
   const date = getDateForDay(weekStartDate, dayIndex);
   const dateStr = formatDateShort(date);
 
+  // Get defaults from planned type
+  const defaults = getDefaultsFromPlannedType(day.type);
+
+  // Effective values (use saved value or default from planned type)
+  const effectiveActivityType = localData.activityType ?? defaults.activityType;
+  const effectiveRunType = localData.runType ?? defaults.runType;
+
   // Calculate pace from local data
   const pace = localData.distanceKm && localData.durationSeconds
     ? calculatePace(localData.distanceKm, localData.durationSeconds)
     : null;
 
-  // Get the badge info - show actual activity if selected, otherwise planned
+  // Get the badge info - show actual selection or effective default
   const getBadgeInfo = () => {
-    if (localData.activityType) {
-      if (localData.activityType === 'run' && localData.runType) {
-        return {
-          label: runTypeLabels[localData.runType],
-          color: runTypeColors[localData.runType],
-        };
-      }
+    if (effectiveActivityType === 'run' && effectiveRunType) {
       return {
-        label: activityLabels[localData.activityType],
-        color: activityTypeColors[localData.activityType],
+        label: runTypeLabels[effectiveRunType],
+        color: runTypeColors[effectiveRunType],
       };
     }
     return {
-      label: plannedTypeLabels[day.type] || day.type,
-      color: plannedTypeColors[day.type] || 'bg-gray-100 text-gray-600',
+      label: activityLabels[effectiveActivityType],
+      color: activityTypeColors[effectiveActivityType],
     };
   };
 
@@ -322,7 +319,7 @@ export function WorkoutItem({
                   key={type}
                   onClick={() => handleActivityTypeChange(type)}
                   className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                    localData.activityType === type
+                    effectiveActivityType === type
                       ? 'bg-blue-600 text-white'
                       : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
                   }`}
@@ -334,7 +331,7 @@ export function WorkoutItem({
           </div>
 
           {/* Run-specific fields */}
-          {localData.activityType === 'run' && (
+          {effectiveActivityType === 'run' && (
             <>
               {/* Run type selector */}
               <div>
@@ -345,7 +342,7 @@ export function WorkoutItem({
                       key={type}
                       onClick={() => handleRunTypeChange(type)}
                       className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors border ${
-                        localData.runType === type
+                        effectiveRunType === type
                           ? runTypeColors[type]
                           : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
                       }`}
