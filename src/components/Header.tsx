@@ -29,8 +29,19 @@ export function Header({ syncing }: HeaderProps) {
 
         {/* Main info */}
         <div className="flex-1 min-w-0">
-          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800 leading-tight">
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800 leading-tight flex items-center gap-2">
             26. Istrski polmaraton
+            <a
+              href="https://istrski-maraton.si/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-gray-400 hover:text-blue-600 transition-colors"
+              title="Odpri uradno stran"
+            >
+              <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+              </svg>
+            </a>
           </h1>
           <p className="text-blue-600 font-medium text-sm sm:text-base">{trainingPlan.athlete}</p>
           <p className="text-sm text-gray-600 mt-1">12. april 2026</p>
