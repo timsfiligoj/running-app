@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { trainingPlan } from './data/trainingPlan';
 import { ProgressData, WorkoutProgress } from './types';
+import { Header } from './components/Header';
 import { ProgressBar } from './components/ProgressBar';
 import { WeekAccordion } from './components/WeekAccordion';
 import { supabase } from './lib/supabase';
@@ -187,16 +188,7 @@ function App() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50">
       <div className="max-w-4xl mx-auto px-4 py-8">
         {/* Header */}
-        <header className="text-center mb-8">
-          <h1 className="text-3xl md:text-4xl font-bold text-gray-800 mb-2">
-            Istrski maraton 2026
-          </h1>
-          <p className="text-lg text-blue-600 font-medium">{trainingPlan.athlete}</p>
-          <p className="text-gray-600 mt-2">Cilj: sub 1:35</p>
-          {syncing && (
-            <p className="text-xs text-gray-400 mt-1">Sinhroniziram...</p>
-          )}
-        </header>
+        <Header syncing={syncing} />
 
         {/* Progress Bar */}
         <ProgressBar completed={completedWorkouts} total={totalWorkouts} totalKm={totalKm} />
