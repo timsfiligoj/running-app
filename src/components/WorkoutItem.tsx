@@ -209,13 +209,19 @@ export function WorkoutItem({
         ? 'border-green-400 bg-green-50'
         : 'border-gray-200'
     }`}>
-      {/* Main row */}
-      <div className="p-4">
+      {/* Main row - clickable to expand */}
+      <div
+        className="p-4 cursor-pointer hover:bg-gray-50 transition-colors"
+        onClick={() => setIsExpanded(!isExpanded)}
+      >
         {/* Top row: checkbox, day/date, badge, expand */}
         <div className="flex items-center gap-3">
           {/* Checkbox / Checkmark */}
           <button
-            onClick={handleToggleComplete}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleToggleComplete();
+            }}
             className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
               progress.completed
                 ? 'bg-green-500 border-green-500 text-white'
@@ -243,11 +249,8 @@ export function WorkoutItem({
           {/* Spacer */}
           <div className="flex-1" />
 
-          {/* Expand button */}
-          <button
-            onClick={() => setIsExpanded(!isExpanded)}
-            className="p-2 text-gray-400 hover:text-gray-600 flex-shrink-0"
-          >
+          {/* Expand indicator */}
+          <div className="p-2 text-gray-400 flex-shrink-0">
             <svg
               className={`w-5 h-5 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
               fill="none"
@@ -256,7 +259,7 @@ export function WorkoutItem({
             >
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
             </svg>
-          </button>
+          </div>
         </div>
 
         {/* Workout description - full width below */}
