@@ -1,19 +1,17 @@
 import { useState } from 'react';
-import { Week, ProgressData } from '../types';
+import { Week, ProgressData, WorkoutProgress } from '../types';
 import { WorkoutItem } from './WorkoutItem';
 
 interface WeekAccordionProps {
   week: Week;
   progress: ProgressData;
-  onToggleComplete: (weekNum: number, dayIndex: number) => void;
-  onUpdateActual: (weekNum: number, dayIndex: number, actual: string) => void;
+  onUpdateWorkout: (weekNum: number, dayIndex: number, data: WorkoutProgress) => void;
 }
 
 export function WeekAccordion({
   week,
   progress,
-  onToggleComplete,
-  onUpdateActual,
+  onUpdateWorkout,
 }: WeekAccordionProps) {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -78,16 +76,15 @@ export function WeekAccordion({
 
       {isOpen && (
         <div className="px-6 pb-6 border-t border-gray-100">
-          <div className="grid gap-3 mt-4 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
+          <div className="space-y-3 mt-4">
             {week.days.map((day, index) => (
               <WorkoutItem
                 key={index}
                 day={day}
-                weekNum={week.week}
+                weekStartDate={week.startDate}
                 dayIndex={index}
                 progress={progress[`${week.week}-${index}`] || { completed: false, actualWorkout: '' }}
-                onToggleComplete={onToggleComplete}
-                onUpdateActual={onUpdateActual}
+                onUpdate={(data) => onUpdateWorkout(week.week, index, data)}
               />
             ))}
           </div>

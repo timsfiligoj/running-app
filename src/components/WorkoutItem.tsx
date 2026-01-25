@@ -1,123 +1,337 @@
 import { useState } from 'react';
-import { Day, WorkoutProgress } from '../types';
+import {
+  Day,
+  WorkoutProgress,
+  ActivityType,
+  RunType,
+  calculatePace,
+  formatDuration,
+  parseDuration,
+  getDateForDay,
+  formatDateShort,
+} from '../types';
 
 interface WorkoutItemProps {
   day: Day;
-  weekNum: number;
+  weekStartDate: string;
   dayIndex: number;
   progress: WorkoutProgress;
-  onToggleComplete: (weekNum: number, dayIndex: number) => void;
-  onUpdateActual: (weekNum: number, dayIndex: number, actual: string) => void;
+  onUpdate: (data: WorkoutProgress) => void;
 }
 
-const typeColors: Record<string, { bg: string; border: string; text: string; label: string }> = {
-  intervals: { bg: 'bg-red-50', border: 'border-red-300', text: 'text-red-700', label: 'Intervali' },
-  tempo: { bg: 'bg-yellow-50', border: 'border-yellow-300', text: 'text-yellow-700', label: 'Tempo' },
-  easy: { bg: 'bg-green-50', border: 'border-green-300', text: 'text-green-700', label: 'Lahek' },
-  long: { bg: 'bg-blue-50', border: 'border-blue-300', text: 'text-blue-700', label: 'Dolgi' },
-  hills: { bg: 'bg-orange-50', border: 'border-orange-300', text: 'text-orange-700', label: 'Klanci' },
-  strength: { bg: 'bg-purple-50', border: 'border-purple-300', text: 'text-purple-700', label: 'Moč' },
-  rest: { bg: 'bg-gray-50', border: 'border-gray-300', text: 'text-gray-600', label: 'Počitek' },
-  test: { bg: 'bg-pink-50', border: 'border-pink-300', text: 'text-pink-700', label: 'Test' },
-  race: { bg: 'bg-amber-50', border: 'border-amber-400', text: 'text-amber-700', label: 'Tekma' },
-  activation: { bg: 'bg-cyan-50', border: 'border-cyan-300', text: 'text-cyan-700', label: 'Aktivacija' },
+const activityLabels: Record<ActivityType, string> = {
+  run: 'Tek',
+  strength: 'Moč',
+  rest: 'Počitek',
+  other: 'Drugo',
+};
+
+const runTypeLabels: Record<RunType, string> = {
+  easy: 'Lahek',
+  tempo: 'Tempo',
+  intervals: 'Intervali',
+  long: 'Dolgi',
+  hills: 'Klanci',
+  test: 'Test',
+  race: 'Tekma',
+};
+
+const runTypeColors: Record<RunType, string> = {
+  easy: 'bg-green-100 text-green-700 border-green-300',
+  tempo: 'bg-yellow-100 text-yellow-700 border-yellow-300',
+  intervals: 'bg-red-100 text-red-700 border-red-300',
+  long: 'bg-blue-100 text-blue-700 border-blue-300',
+  hills: 'bg-orange-100 text-orange-700 border-orange-300',
+  test: 'bg-pink-100 text-pink-700 border-pink-300',
+  race: 'bg-amber-100 text-amber-700 border-amber-400',
+};
+
+const plannedTypeColors: Record<string, string> = {
+  intervals: 'bg-red-100 text-red-700',
+  tempo: 'bg-yellow-100 text-yellow-700',
+  easy: 'bg-green-100 text-green-700',
+  long: 'bg-blue-100 text-blue-700',
+  hills: 'bg-orange-100 text-orange-700',
+  strength: 'bg-purple-100 text-purple-700',
+  rest: 'bg-gray-100 text-gray-600',
+  test: 'bg-pink-100 text-pink-700',
+  race: 'bg-amber-100 text-amber-700',
+  activation: 'bg-cyan-100 text-cyan-700',
+};
+
+const plannedTypeLabels: Record<string, string> = {
+  intervals: 'Intervali',
+  tempo: 'Tempo',
+  easy: 'Lahek',
+  long: 'Dolgi',
+  hills: 'Klanci',
+  strength: 'Moč',
+  rest: 'Počitek',
+  test: 'Test',
+  race: 'Tekma',
+  activation: 'Aktivacija',
 };
 
 export function WorkoutItem({
   day,
-  weekNum,
+  weekStartDate,
   dayIndex,
   progress,
-  onToggleComplete,
-  onUpdateActual,
+  onUpdate,
 }: WorkoutItemProps) {
-  const [isEditing, setIsEditing] = useState(false);
-  const [editValue, setEditValue] = useState(progress.actualWorkout || day.workout);
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [durationInput, setDurationInput] = useState(
+    progress.durationSeconds ? formatDuration(progress.durationSeconds) : ''
+  );
 
-  const colors = typeColors[day.type] || typeColors.rest;
+  const date = getDateForDay(weekStartDate, dayIndex);
+  const dateStr = formatDateShort(date);
+  const pace = progress.distanceKm && progress.durationSeconds
+    ? calculatePace(progress.distanceKm, progress.durationSeconds)
+    : null;
 
-  const handleSave = () => {
-    onUpdateActual(weekNum, dayIndex, editValue);
-    setIsEditing(false);
+  const handleToggleComplete = () => {
+    onUpdate({
+      ...progress,
+      completed: !progress.completed,
+    });
   };
 
-  const handleCancel = () => {
-    setEditValue(progress.actualWorkout || day.workout);
-    setIsEditing(false);
+  const handleActivityTypeChange = (type: ActivityType) => {
+    onUpdate({
+      ...progress,
+      activityType: type,
+      runType: type === 'run' ? progress.runType : undefined,
+    });
+  };
+
+  const handleRunTypeChange = (type: RunType) => {
+    onUpdate({
+      ...progress,
+      runType: type,
+    });
+  };
+
+  const handleDistanceChange = (value: string) => {
+    const num = parseFloat(value);
+    onUpdate({
+      ...progress,
+      distanceKm: isNaN(num) ? undefined : num,
+    });
+  };
+
+  const handleDurationChange = (value: string) => {
+    setDurationInput(value);
+  };
+
+  const handleDurationBlur = () => {
+    const seconds = parseDuration(durationInput);
+    onUpdate({
+      ...progress,
+      durationSeconds: seconds || undefined,
+    });
+  };
+
+  const handleHeartRateChange = (value: string) => {
+    const num = parseInt(value);
+    onUpdate({
+      ...progress,
+      avgHeartRate: isNaN(num) ? undefined : num,
+    });
+  };
+
+  const handleCommentChange = (value: string) => {
+    onUpdate({
+      ...progress,
+      comment: value,
+    });
   };
 
   return (
-    <div
-      className={`p-4 rounded-lg border-2 ${colors.bg} ${colors.border} ${
-        progress.completed ? 'opacity-75' : ''
-      } transition-all duration-200`}
-    >
-      <div className="flex items-start gap-3">
+    <div className={`bg-white rounded-lg border ${progress.completed ? 'border-green-300 bg-green-50/30' : 'border-gray-200'} overflow-hidden`}>
+      {/* Main row */}
+      <div className="flex items-center gap-3 p-4">
+        {/* Checkbox */}
         <input
           type="checkbox"
           checked={progress.completed}
-          onChange={() => onToggleComplete(weekNum, dayIndex)}
-          className="mt-1 w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+          onChange={handleToggleComplete}
+          className="w-5 h-5 rounded-full border-2 border-gray-300 text-green-600 focus:ring-green-500 cursor-pointer flex-shrink-0"
         />
-        <div className="flex-1 min-w-0">
-          <div className="flex flex-wrap items-center gap-2 mb-2">
-            <span className="font-semibold text-gray-800">{day.day}</span>
-            <span
-              className={`px-2 py-0.5 rounded-full text-xs font-medium ${colors.bg} ${colors.text} border ${colors.border}`}
-            >
-              {colors.label}
-            </span>
-            {progress.completed && (
-              <span className="text-green-600 text-sm font-medium">✓ Opravljeno</span>
-            )}
-          </div>
 
-          {isEditing ? (
-            <div className="space-y-2">
-              <textarea
-                value={editValue}
-                onChange={(e) => setEditValue(e.target.value)}
-                className="w-full p-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                rows={3}
-                autoFocus
-              />
-              <div className="flex gap-2">
-                <button
-                  onClick={handleSave}
-                  className="px-3 py-1 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 transition-colors"
-                >
-                  Shrani
-                </button>
-                <button
-                  onClick={handleCancel}
-                  className="px-3 py-1 bg-gray-200 text-gray-700 text-sm rounded-md hover:bg-gray-300 transition-colors"
-                >
-                  Prekliči
-                </button>
-              </div>
-            </div>
-          ) : (
-            <div>
-              <p
-                className={`text-sm text-gray-700 ${progress.completed ? 'line-through' : ''}`}
-              >
-                {progress.actualWorkout || day.workout}
-              </p>
-              {progress.actualWorkout && progress.actualWorkout !== day.workout && (
-                <p className="text-xs text-gray-500 mt-1 italic">
-                  Prvotno: {day.workout}
-                </p>
-              )}
-              <button
-                onClick={() => setIsEditing(true)}
-                className="mt-2 text-xs text-blue-600 hover:text-blue-800 hover:underline"
-              >
-                Uredi
-              </button>
-            </div>
+        {/* Day and date */}
+        <div className="flex-shrink-0 w-20">
+          <div className="font-bold text-gray-900">{day.day}</div>
+          <div className="text-sm text-gray-500">{dateStr}</div>
+        </div>
+
+        {/* Planned type badge */}
+        <span className={`px-2 py-1 rounded-full text-xs font-medium flex-shrink-0 ${plannedTypeColors[day.type] || 'bg-gray-100 text-gray-600'}`}>
+          {plannedTypeLabels[day.type] || day.type}
+        </span>
+
+        {/* Workout description */}
+        <div className="flex-1 min-w-0">
+          <p className={`text-sm text-gray-700 ${progress.completed ? 'line-through opacity-60' : ''}`}>
+            {day.workout}
+          </p>
+        </div>
+
+        {/* Expand button */}
+        <button
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="p-2 text-gray-400 hover:text-gray-600 flex-shrink-0"
+        >
+          <svg
+            className={`w-5 h-5 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+      </div>
+
+      {/* Logged data summary (if any) */}
+      {!isExpanded && (progress.distanceKm || progress.durationSeconds || progress.avgHeartRate) && (
+        <div className="px-4 pb-3 flex flex-wrap gap-3 text-sm">
+          {progress.activityType === 'run' && progress.runType && (
+            <span className={`px-2 py-0.5 rounded border text-xs ${runTypeColors[progress.runType]}`}>
+              {runTypeLabels[progress.runType]}
+            </span>
+          )}
+          {progress.distanceKm && (
+            <span className="text-gray-600">
+              <span className="font-medium">{progress.distanceKm.toFixed(2)}</span> km
+            </span>
+          )}
+          {progress.durationSeconds && (
+            <span className="text-gray-600">
+              <span className="font-medium">{formatDuration(progress.durationSeconds)}</span>
+            </span>
+          )}
+          {pace && (
+            <span className="text-blue-600 font-medium">{pace}</span>
+          )}
+          {progress.avgHeartRate && (
+            <span className="text-red-600">
+              <span className="font-medium">{progress.avgHeartRate}</span> bpm
+            </span>
           )}
         </div>
-      </div>
+      )}
+
+      {/* Expanded edit section */}
+      {isExpanded && (
+        <div className="border-t border-gray-100 p-4 bg-gray-50 space-y-4">
+          {/* Activity type selector */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Tip aktivnosti</label>
+            <div className="flex flex-wrap gap-2">
+              {(['run', 'strength', 'rest', 'other'] as ActivityType[]).map((type) => (
+                <button
+                  key={type}
+                  onClick={() => handleActivityTypeChange(type)}
+                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                    progress.activityType === type
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  {activityLabels[type]}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Run-specific fields */}
+          {progress.activityType === 'run' && (
+            <>
+              {/* Run type selector */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Vrsta teka</label>
+                <div className="flex flex-wrap gap-2">
+                  {(['easy', 'tempo', 'intervals', 'long', 'hills', 'test', 'race'] as RunType[]).map((type) => (
+                    <button
+                      key={type}
+                      onClick={() => handleRunTypeChange(type)}
+                      className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors border ${
+                        progress.runType === type
+                          ? runTypeColors[type]
+                          : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                      }`}
+                    >
+                      {runTypeLabels[type]}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Distance, Duration, HR */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Dolžina (km)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={progress.distanceKm || ''}
+                    onChange={(e) => handleDistanceChange(e.target.value)}
+                    placeholder="12.55"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Čas (h:mm:ss)</label>
+                  <input
+                    type="text"
+                    value={durationInput}
+                    onChange={(e) => handleDurationChange(e.target.value)}
+                    onBlur={handleDurationBlur}
+                    placeholder="1:05:30"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Povp. HR (bpm)</label>
+                  <input
+                    type="number"
+                    value={progress.avgHeartRate || ''}
+                    onChange={(e) => handleHeartRateChange(e.target.value)}
+                    placeholder="145"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Tempo</label>
+                  <div className="px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg text-sm font-medium text-blue-700">
+                    {pace || '-'}
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* Comment */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Komentar</label>
+            <textarea
+              value={progress.comment || ''}
+              onChange={(e) => handleCommentChange(e.target.value)}
+              placeholder="Kako je šlo? Opombe, občutki..."
+              rows={2}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Comment preview when collapsed */}
+      {!isExpanded && progress.comment && (
+        <div className="px-4 pb-3">
+          <p className="text-sm text-gray-500 italic">"{progress.comment}"</p>
+        </div>
+      )}
     </div>
   );
 }

@@ -6,11 +6,35 @@ import { WeekAccordion } from './components/WeekAccordion';
 import { RaceStrategy } from './components/RaceStrategy';
 import { supabase } from './lib/supabase';
 
+interface DbRow {
+  id: string;
+  completed: boolean;
+  actual_workout: string;
+  activity_type?: string;
+  run_type?: string;
+  distance_km?: number;
+  duration_seconds?: number;
+  avg_heart_rate?: number;
+  comment?: string;
+}
+
 function App() {
   const [progress, setProgress] = useState<ProgressData>({});
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Convert DB row to WorkoutProgress
+  const dbRowToProgress = (row: DbRow): WorkoutProgress => ({
+    completed: row.completed,
+    actualWorkout: row.actual_workout || '',
+    activityType: row.activity_type as WorkoutProgress['activityType'],
+    runType: row.run_type as WorkoutProgress['runType'],
+    distanceKm: row.distance_km,
+    durationSeconds: row.duration_seconds,
+    avgHeartRate: row.avg_heart_rate,
+    comment: row.comment,
+  });
 
   // Load data from Supabase
   const loadProgress = useCallback(async () => {
@@ -27,11 +51,8 @@ function App() {
       }
 
       const progressData: ProgressData = {};
-      data?.forEach((row: { id: string; completed: boolean; actual_workout: string }) => {
-        progressData[row.id] = {
-          completed: row.completed,
-          actualWorkout: row.actual_workout,
-        };
+      data?.forEach((row: DbRow) => {
+        progressData[row.id] = dbRowToProgress(row);
       });
       setProgress(progressData);
       setError(null);
@@ -57,13 +78,10 @@ function App() {
         { event: '*', schema: 'public', table: 'workout_progress' },
         (payload) => {
           if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
-            const row = payload.new as { id: string; completed: boolean; actual_workout: string };
+            const row = payload.new as DbRow;
             setProgress((prev) => ({
               ...prev,
-              [row.id]: {
-                completed: row.completed,
-                actualWorkout: row.actual_workout,
-              },
+              [row.id]: dbRowToProgress(row),
             }));
           }
         }
@@ -83,7 +101,13 @@ function App() {
       .upsert({
         id: key,
         completed: data.completed,
-        actual_workout: data.actualWorkout,
+        actual_workout: data.actualWorkout || '',
+        activity_type: data.activityType || null,
+        run_type: data.runType || null,
+        distance_km: data.distanceKm || null,
+        duration_seconds: data.durationSeconds || null,
+        avg_heart_rate: data.avgHeartRate || null,
+        comment: data.comment || null,
         updated_at: new Date().toISOString(),
       });
 
@@ -93,34 +117,15 @@ function App() {
     setSyncing(false);
   };
 
-  const handleToggleComplete = async (weekNum: number, dayIndex: number) => {
+  const handleUpdateWorkout = async (weekNum: number, dayIndex: number, data: WorkoutProgress) => {
     const key = `${weekNum}-${dayIndex}`;
-    const newData: WorkoutProgress = {
-      completed: !progress[key]?.completed,
-      actualWorkout: progress[key]?.actualWorkout || '',
-    };
 
     setProgress((prev) => ({
       ...prev,
-      [key]: newData,
+      [key]: data,
     }));
 
-    await saveProgress(key, newData);
-  };
-
-  const handleUpdateActual = async (weekNum: number, dayIndex: number, actual: string) => {
-    const key = `${weekNum}-${dayIndex}`;
-    const newData: WorkoutProgress = {
-      completed: progress[key]?.completed || false,
-      actualWorkout: actual,
-    };
-
-    setProgress((prev) => ({
-      ...prev,
-      [key]: newData,
-    }));
-
-    await saveProgress(key, newData);
+    await saveProgress(key, data);
   };
 
   const totalWorkouts = trainingPlan.weeks.reduce((acc, week) => acc + week.days.length, 0);
@@ -187,8 +192,7 @@ function App() {
               key={week.week}
               week={week}
               progress={progress}
-              onToggleComplete={handleToggleComplete}
-              onUpdateActual={handleUpdateActual}
+              onUpdateWorkout={handleUpdateWorkout}
             />
           ))}
         </div>

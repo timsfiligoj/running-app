@@ -9,6 +9,7 @@ export const trainingPlan: TrainingPlan = {
       "title": "27. jan - 2. feb",
       "phase": "FAZA 1: GRADNJA BAZE + KLANCI",
       "focus": "Vstop v program, polarizacija, klanci na dolgem teku",
+      "startDate": "2026-01-27",
       "days": [
         { "day": "Pon", "type": "strength", "workout": "Moč nog doma (30 min): počepi, izpadni koraki, dvigi na prste, plank, stabilnost gležnja" },
         { "day": "Tor", "type": "intervals", "workout": "Intervali: 10 min ogrevanje Z2 + 5x 1000m @ 4:10/km (odmor 3 min) + 10 min ohlajanje" },
@@ -24,6 +25,7 @@ export const trainingPlan: TrainingPlan = {
       "title": "3. feb - 9. feb",
       "phase": "FAZA 1: GRADNJA BAZE + KLANCI",
       "focus": "Uvedba klančnih intervalov (70-80% napora)",
+      "startDate": "2026-02-03",
       "days": [
         { "day": "Pon", "type": "strength", "workout": "Moč nog (30 min): počepi s skoki, box jumps, izpadni koraki" },
         { "day": "Tor", "type": "hills", "workout": "Klanci (ZMERNO): 10 min ogrevanje + 6x 400m klanec @ 70-80% napora (odmor hoja dol) + 10 min ohlajanje" },
@@ -39,6 +41,7 @@ export const trainingPlan: TrainingPlan = {
       "title": "10. feb - 16. feb",
       "phase": "FAZA 1: GRADNJA BAZE + KLANCI",
       "focus": "Polna intenzivnost klancev",
+      "startDate": "2026-02-10",
       "days": [
         { "day": "Pon", "type": "strength", "workout": "Moč nog (30 min): eksplozivne vaje, pliometrija" },
         { "day": "Tor", "type": "intervals", "workout": "Intervali: 10 min ogrevanje + 5x 1000m @ 4:08/km (odmor 3 min) + 10 min ohlajanje" },
@@ -54,6 +57,7 @@ export const trainingPlan: TrainingPlan = {
       "title": "17. feb - 23. feb",
       "phase": "FAZA 1: GRADNJA BAZE + KLANCI",
       "focus": "Regeneracijski teden (deload)",
+      "startDate": "2026-02-17",
       "days": [
         { "day": "Pon", "type": "strength", "workout": "Moč nog - lažje (20 min)" },
         { "day": "Tor", "type": "intervals", "workout": "Intervali: 10 min ogrevanje + 4x 1000m @ 4:10/km (odmor 3 min) + 10 min ohlajanje" },
@@ -69,6 +73,7 @@ export const trainingPlan: TrainingPlan = {
       "title": "24. feb - 2. mar",
       "phase": "FAZA 2: HM SPECIFIKA",
       "focus": "Daljši tempo bloki",
+      "startDate": "2026-02-24",
       "days": [
         { "day": "Pon", "type": "strength", "workout": "Moč nog (30 min): eksplozivnost" },
         { "day": "Tor", "type": "intervals", "workout": "HM intervali: 10 min ogrevanje + 4x 2000m @ 4:25/km (odmor 3 min) + 10 min ohlajanje" },
@@ -84,6 +89,7 @@ export const trainingPlan: TrainingPlan = {
       "title": "3. mar - 9. mar",
       "phase": "FAZA 2: HM SPECIFIKA",
       "focus": "Vzdržljivost na tempu",
+      "startDate": "2026-03-03",
       "days": [
         { "day": "Pon", "type": "strength", "workout": "Moč nog (30 min)" },
         { "day": "Tor", "type": "tempo", "workout": "Tempo blok: 10 min ogrevanje + 8 km @ 4:30/km + 10 min ohlajanje" },
@@ -99,6 +105,7 @@ export const trainingPlan: TrainingPlan = {
       "title": "10. mar - 16. mar",
       "phase": "FAZA 2: HM SPECIFIKA",
       "focus": "Gradnja proti testu",
+      "startDate": "2026-03-10",
       "days": [
         { "day": "Pon", "type": "strength", "workout": "Moč nog (30 min)" },
         { "day": "Tor", "type": "intervals", "workout": "Intervali: 10 min ogrevanje + 5x 1600m @ 4:20/km (odmor 3 min) + 10 min ohlajanje" },
@@ -114,6 +121,7 @@ export const trainingPlan: TrainingPlan = {
       "title": "17. mar - 23. mar",
       "phase": "FAZA 2: HM SPECIFIKA",
       "focus": "⭐ TESTNI TEDEN",
+      "startDate": "2026-03-17",
       "days": [
         { "day": "Pon", "type": "strength", "workout": "Moč nog - lažje (20 min)" },
         { "day": "Tor", "type": "test", "workout": "⭐ TESTNI TRENING: 10 min ogrevanje + 10-12 km @ 4:28-4:30/km + 10 min ohlajanje. KLJUČNO: zadnja 2 km ne smeš razpasti!" },
@@ -129,6 +137,7 @@ export const trainingPlan: TrainingPlan = {
       "title": "24. mar - 30. mar",
       "phase": "FAZA 3: PRED-TAPER",
       "focus": "Zadnji trdi teden",
+      "startDate": "2026-03-24",
       "days": [
         { "day": "Pon", "type": "strength", "workout": "Moč nog (25 min)" },
         { "day": "Tor", "type": "tempo", "workout": "Tempo blok: 10 min ogrevanje + 10 km @ 4:30/km + 10 min ohlajanje" },
@@ -144,6 +153,7 @@ export const trainingPlan: TrainingPlan = {
       "title": "31. mar - 6. apr",
       "phase": "FAZA 4: TAPER",
       "focus": "Zmanjšan volumen, ohranjena intenzivnost",
+      "startDate": "2026-03-31",
       "days": [
         { "day": "Pon", "type": "strength", "workout": "Moč nog - zelo lahka (15 min)" },
         { "day": "Tor", "type": "tempo", "workout": "HM simulacija: 10 min ogrevanje + 6 km @ 4:28/km + 10 min ohlajanje" },
@@ -159,6 +169,7 @@ export const trainingPlan: TrainingPlan = {
       "title": "7. apr - 12. apr",
       "phase": "FAZA 4: TAPER",
       "focus": "🏁 TEKMA TEDEN",
+      "startDate": "2026-04-07",
       "days": [
         { "day": "Pon", "type": "easy", "workout": "Lahek tek: 5 km @ 5:40/km + 4x 100m strides" },
         { "day": "Tor", "type": "activation", "workout": "Aktivacija: 6 km skupaj, vključno z 3x 1 km @ 4:25/km (odmor 2 min)" },
