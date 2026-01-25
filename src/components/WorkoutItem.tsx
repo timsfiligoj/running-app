@@ -182,6 +182,10 @@ export function WorkoutItem({
     updateLocalData({ actualWorkout: value });
   };
 
+  const handleStravaUrlChange = (value: string) => {
+    updateLocalData({ stravaUrl: value });
+  };
+
   const handleSave = () => {
     const seconds = parseDuration(durationInput);
     const dataToSave = {
@@ -278,6 +282,23 @@ export function WorkoutItem({
               <span className="font-medium">{localData.avgHeartRate}</span> bpm
             </span>
           )}
+        </div>
+      )}
+
+      {/* Strava link when collapsed */}
+      {!isExpanded && localData.stravaUrl && (
+        <div className="px-4 pb-3">
+          <a
+            href={localData.stravaUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 text-sm text-orange-600 hover:text-orange-700 font-medium"
+          >
+            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169" />
+            </svg>
+            Poglej na Stravi
+          </a>
         </div>
       )}
 
@@ -392,6 +413,18 @@ export function WorkoutItem({
                     {pace || '-'}
                   </div>
                 </div>
+              </div>
+
+              {/* Strava URL */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Strava URL</label>
+                <input
+                  type="url"
+                  value={localData.stravaUrl || ''}
+                  onChange={(e) => handleStravaUrlChange(e.target.value)}
+                  placeholder="https://www.strava.com/activities/..."
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
               </div>
             </>
           )}

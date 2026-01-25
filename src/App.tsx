@@ -15,6 +15,7 @@ interface DbRow {
   duration_seconds?: number;
   avg_heart_rate?: number;
   comment?: string;
+  strava_url?: string;
 }
 
 function App() {
@@ -33,6 +34,7 @@ function App() {
     durationSeconds: row.duration_seconds,
     avgHeartRate: row.avg_heart_rate,
     comment: row.comment,
+    stravaUrl: row.strava_url,
   });
 
   // Load data from Supabase
@@ -107,6 +109,7 @@ function App() {
         duration_seconds: data.durationSeconds || null,
         avg_heart_rate: data.avgHeartRate || null,
         comment: data.comment || null,
+        strava_url: data.stravaUrl || null,
         updated_at: new Date().toISOString(),
       });
 

@@ -53,6 +53,7 @@ export interface WorkoutProgress {
   durationSeconds?: number; // stored as seconds for easier calculations
   avgHeartRate?: number;
   comment?: string;
+  stravaUrl?: string;
 }
 
 export type ProgressData = Record<string, WorkoutProgress>;
