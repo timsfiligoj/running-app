@@ -45,7 +45,7 @@ export type RunType = 'easy' | 'tempo' | 'intervals' | 'long' | 'hills' | 'test'
 
 export interface WorkoutProgress {
   completed: boolean;
-  actualWorkout: string;
+  actualWorkout?: string; // undefined = use default, '' = explicitly cleared
   // New fields
   activityType?: ActivityType;
   runType?: RunType;

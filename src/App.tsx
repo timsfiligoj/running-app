@@ -27,7 +27,7 @@ function App() {
   // Convert DB row to WorkoutProgress
   const dbRowToProgress = (row: DbRow): WorkoutProgress => ({
     completed: row.completed,
-    actualWorkout: row.actual_workout || '',
+    actualWorkout: row.actual_workout || undefined, // null/empty = use default
     activityType: row.activity_type as WorkoutProgress['activityType'],
     runType: row.run_type as WorkoutProgress['runType'],
     distanceKm: row.distance_km,
@@ -102,7 +102,7 @@ function App() {
       .upsert({
         id: key,
         completed: data.completed,
-        actual_workout: data.actualWorkout || '',
+        actual_workout: data.actualWorkout ?? null, // undefined = null (use default)
         activity_type: data.activityType || null,
         run_type: data.runType || null,
         distance_km: data.distanceKm || null,

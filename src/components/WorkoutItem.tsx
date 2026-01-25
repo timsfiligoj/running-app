@@ -130,8 +130,8 @@ export function WorkoutItem({
 
   const badgeInfo = getBadgeInfo();
 
-  // Show actual workout if filled, otherwise planned
-  const displayedWorkout = localData.actualWorkout || day.workout;
+  // Show actual workout if set, otherwise planned
+  const displayedWorkout = localData.actualWorkout ?? day.workout;
 
   const handleToggleComplete = () => {
     const newData = {
@@ -321,9 +321,9 @@ export function WorkoutItem({
               rows={2}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
-            {localData.actualWorkout && localData.actualWorkout !== day.workout && (
+            {localData.actualWorkout !== undefined && localData.actualWorkout !== day.workout && (
               <button
-                onClick={() => updateLocalData({ actualWorkout: '' })}
+                onClick={() => updateLocalData({ actualWorkout: undefined })}
                 className="mt-1 text-xs text-blue-600 hover:text-blue-800"
               >
                 Ponastavi na originalni načrt
