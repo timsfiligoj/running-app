@@ -147,6 +147,16 @@ export function WorkoutItem({
     });
   };
 
+  const handleActualWorkoutChange = (value: string) => {
+    onUpdate({
+      ...progress,
+      actualWorkout: value,
+    });
+  };
+
+  // Show actual workout if filled, otherwise planned
+  const displayedWorkout = progress.actualWorkout || day.workout;
+
   return (
     <div className={`bg-white rounded-lg border ${progress.completed ? 'border-green-300 bg-green-50/30' : 'border-gray-200'} overflow-hidden`}>
       {/* Main row */}
@@ -173,8 +183,11 @@ export function WorkoutItem({
         {/* Workout description */}
         <div className="flex-1 min-w-0">
           <p className={`text-sm text-gray-700 ${progress.completed ? 'line-through opacity-60' : ''}`}>
-            {day.workout}
+            {displayedWorkout}
           </p>
+          {progress.actualWorkout && progress.actualWorkout !== day.workout && (
+            <p className="text-xs text-gray-400 line-through mt-0.5">{day.workout}</p>
+          )}
         </div>
 
         {/* Expand button */}
@@ -225,6 +238,25 @@ export function WorkoutItem({
       {/* Expanded edit section */}
       {isExpanded && (
         <div className="border-t border-gray-100 p-4 bg-gray-50 space-y-4">
+          {/* Workout description edit */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Opis treninga</label>
+            <textarea
+              value={progress.actualWorkout || day.workout}
+              onChange={(e) => handleActualWorkoutChange(e.target.value)}
+              rows={2}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            />
+            {progress.actualWorkout && progress.actualWorkout !== day.workout && (
+              <button
+                onClick={() => handleActualWorkoutChange('')}
+                className="mt-1 text-xs text-blue-600 hover:text-blue-800"
+              >
+                Ponastavi na originalni načrt
+              </button>
+            )}
+          </div>
+
           {/* Activity type selector */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Tip aktivnosti</label>
