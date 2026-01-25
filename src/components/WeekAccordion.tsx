@@ -15,11 +15,13 @@ export function WeekAccordion({
 }: WeekAccordionProps) {
   const [isOpen, setIsOpen] = useState(false);
 
+  // Exclude rest days from counts
+  const nonRestDays = week.days.filter(day => day.type !== 'rest');
   const completedCount = week.days.filter(
-    (_, i) => progress[`${week.week}-${i}`]?.completed
+    (day, i) => day.type !== 'rest' && progress[`${week.week}-${i}`]?.completed
   ).length;
-  const totalCount = week.days.length;
-  const isWeekComplete = completedCount === totalCount;
+  const totalCount = nonRestDays.length;
+  const isWeekComplete = totalCount > 0 && completedCount === totalCount;
 
   return (
     <div className="bg-white rounded-xl shadow-md overflow-hidden mb-4">

@@ -127,8 +127,21 @@ function App() {
     await saveProgress(key, data);
   };
 
-  const totalWorkouts = trainingPlan.weeks.reduce((acc, week) => acc + week.days.length, 0);
-  const completedWorkouts = Object.values(progress).filter((p) => p.completed).length;
+  // Count only non-rest workouts
+  const totalWorkouts = trainingPlan.weeks.reduce(
+    (acc, week) => acc + week.days.filter(day => day.type !== 'rest').length,
+    0
+  );
+
+  // Count completed non-rest workouts
+  const completedWorkouts = trainingPlan.weeks.reduce((acc, week) => {
+    return acc + week.days.filter((day, index) => {
+      if (day.type === 'rest') return false;
+      const key = `${week.week}-${index}`;
+      return progress[key]?.completed;
+    }).length;
+  }, 0);
+
   const totalKm = Object.values(progress).reduce((acc, p) => acc + (p.distanceKm || 0), 0);
 
   if (loading) {
