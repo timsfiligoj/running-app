@@ -16,8 +16,10 @@ interface WorkoutItemProps {
   day: Day;
   weekStartDate: string;
   dayIndex: number;
+  allDays: Day[];
   progress: WorkoutProgress;
   onUpdate: (data: WorkoutProgress) => void;
+  onSwap: (toIndex: number) => void;
 }
 
 const activityLabels: Record<ActivityType, string> = {
@@ -80,10 +82,13 @@ export function WorkoutItem({
   day,
   weekStartDate,
   dayIndex,
+  allDays,
   progress,
   onUpdate,
+  onSwap,
 }: WorkoutItemProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [showSwapOptions, setShowSwapOptions] = useState(false);
 
   // Local state for form fields
   const [localData, setLocalData] = useState<WorkoutProgress>(progress);
@@ -398,6 +403,42 @@ export function WorkoutItem({
       {/* Expanded edit section */}
       {isExpanded && (
         <div className="border-t border-gray-100 p-4 bg-gray-50 space-y-4">
+          {/* Swap workout with another day */}
+          <div>
+            <button
+              type="button"
+              onClick={() => setShowSwapOptions(!showSwapOptions)}
+              className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-purple-700 bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+              </svg>
+              Zamenjaj dan
+            </button>
+            {showSwapOptions && (
+              <div className="mt-2 p-3 bg-purple-50 rounded-lg border border-purple-200">
+                <p className="text-sm text-purple-700 mb-2">Zamenjaj s:</p>
+                <div className="flex flex-wrap gap-2">
+                  {allDays.map((otherDay, idx) => (
+                    idx !== dayIndex && (
+                      <button
+                        key={idx}
+                        onClick={() => {
+                          onSwap(idx);
+                          setShowSwapOptions(false);
+                          setIsExpanded(false);
+                        }}
+                        className="px-3 py-1.5 text-sm font-medium bg-white border border-purple-300 text-purple-700 hover:bg-purple-100 rounded-lg transition-colors"
+                      >
+                        {otherDay.day}
+                      </button>
+                    )
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* Workout description edit */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Opis treninga</label>

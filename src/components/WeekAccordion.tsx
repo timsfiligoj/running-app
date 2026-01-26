@@ -13,6 +13,28 @@ export function WeekAccordion({
   progress,
   onUpdateWorkout,
 }: WeekAccordionProps) {
+  // Handle swapping workouts between two days
+  const handleSwapWorkouts = (fromIndex: number, toIndex: number) => {
+    const fromKey = `${week.week}-${fromIndex}`;
+    const toKey = `${week.week}-${toIndex}`;
+
+    const fromProgress = progress[fromKey] || { completed: false };
+    const toProgress = progress[toKey] || { completed: false };
+
+    // Get the current displayed workouts (actual or planned)
+    const fromWorkout = fromProgress.actualWorkout || week.days[fromIndex].workout;
+    const toWorkout = toProgress.actualWorkout || week.days[toIndex].workout;
+
+    // Swap the workouts
+    onUpdateWorkout(week.week, fromIndex, {
+      ...fromProgress,
+      actualWorkout: toWorkout,
+    });
+    onUpdateWorkout(week.week, toIndex, {
+      ...toProgress,
+      actualWorkout: fromWorkout,
+    });
+  };
   const [isOpen, setIsOpen] = useState(false);
 
   // Exclude rest days from counts
@@ -85,8 +107,10 @@ export function WeekAccordion({
                 day={day}
                 weekStartDate={week.startDate}
                 dayIndex={index}
+                allDays={week.days}
                 progress={progress[`${week.week}-${index}`] || { completed: false, actualWorkout: '' }}
                 onUpdate={(data) => onUpdateWorkout(week.week, index, data)}
+                onSwap={(toIndex) => handleSwapWorkouts(index, toIndex)}
               />
             ))}
           </div>

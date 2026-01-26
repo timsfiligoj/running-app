@@ -11,6 +11,7 @@ Aplikacija za sledenje 11-tedenskemu programu priprave na Istrski polmaraton s c
 - **Accordion prikaz po tednih** - klikni za razširitev/zaprtje
 - **Označevanje treningov** - checkbox za "opravljeno" ✅ ali "izpuščeno" ❌
 - **Izpuščeni treningi** - označi treninge, ki si jih moral preskočiti (bolezen, poškodba)
+- **Zamenjava treningov** - premakni trening na drug dan v tednu (npr. če dežuje)
 - **Urejanje opisov** - zabeleži kaj si dejansko naredil
 - **Progress bar** - vizualni prikaz napredka
 - **Barvne oznake** - vsak tip treninga ima svojo barvo
