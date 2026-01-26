@@ -10,6 +10,7 @@ import {
   getDateForDay,
   formatDateShort,
 } from '../types';
+import { fetchStravaData } from '../lib/strava';
 
 interface WorkoutItemProps {
   day: Day;
@@ -90,6 +91,8 @@ export function WorkoutItem({
     progress.durationSeconds ? formatDuration(progress.durationSeconds) : ''
   );
   const [hasChanges, setHasChanges] = useState(false);
+  const [stravaLoading, setStravaLoading] = useState(false);
+  const [stravaError, setStravaError] = useState<string | null>(null);
 
   // Sync local state when progress changes from outside (e.g., real-time sync)
   useEffect(() => {
@@ -184,6 +187,35 @@ export function WorkoutItem({
 
   const handleStravaUrlChange = (value: string) => {
     updateLocalData({ stravaUrl: value });
+    setStravaError(null);
+  };
+
+  const handleFetchStrava = async () => {
+    if (!localData.stravaUrl) return;
+
+    setStravaLoading(true);
+    setStravaError(null);
+
+    const result = await fetchStravaData(localData.stravaUrl);
+
+    if (result.error) {
+      setStravaError(result.error);
+    } else if (result.data) {
+      // Update all available fields at once
+      setLocalData(prev => ({
+        ...prev,
+        ...(result.data!.distanceKm !== null && { distanceKm: result.data!.distanceKm }),
+        ...(result.data!.durationSeconds !== null && { durationSeconds: result.data!.durationSeconds }),
+        ...(result.data!.avgHeartRate !== null && { avgHeartRate: result.data!.avgHeartRate }),
+      }));
+      // Update duration input
+      if (result.data.durationSeconds !== null) {
+        setDurationInput(formatDuration(result.data.durationSeconds));
+      }
+      setHasChanges(true);
+    }
+
+    setStravaLoading(false);
   };
 
   const handleSave = () => {
@@ -425,13 +457,40 @@ export function WorkoutItem({
               {/* Strava URL */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Strava URL</label>
-                <input
-                  type="url"
-                  value={localData.stravaUrl || ''}
-                  onChange={(e) => handleStravaUrlChange(e.target.value)}
-                  placeholder="https://www.strava.com/activities/..."
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
+                <div className="flex gap-2">
+                  <input
+                    type="url"
+                    value={localData.stravaUrl || ''}
+                    onChange={(e) => handleStravaUrlChange(e.target.value)}
+                    placeholder="https://www.strava.com/activities/..."
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleFetchStrava}
+                    disabled={!localData.stravaUrl || stravaLoading}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
+                      localData.stravaUrl && !stravaLoading
+                        ? 'bg-orange-500 text-white hover:bg-orange-600'
+                        : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                    }`}
+                  >
+                    {stravaLoading ? (
+                      <>
+                        <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                        </svg>
+                        Nalagam...
+                      </>
+                    ) : (
+                      'Naloži'
+                    )}
+                  </button>
+                </div>
+                {stravaError && (
+                  <p className="mt-1 text-sm text-red-600">{stravaError}</p>
+                )}
               </div>
             </>
           )}

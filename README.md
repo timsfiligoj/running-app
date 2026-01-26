@@ -15,6 +15,7 @@ Aplikacija za sledenje 11-tedenskemu programu priprave na Istrski polmaraton s c
 - **Barvne oznake** - vsak tip treninga ima svojo barvo
 - **Strategija za tekmo** - tempo in prehrana na dnu strani
 - **Real-time sinhronizacija** - deli napredek z drugimi (Supabase)
+- **Strava integracija** - avtomatski uvoz podatkov iz Strava aktivnosti (razdalja, čas, HR)
 
 ## Barvna legenda
 
@@ -79,7 +80,8 @@ src/
 ├── data/
 │   └── trainingPlan.ts      # Podatki načrta
 ├── lib/
-│   └── supabase.ts          # Supabase client
+│   ├── supabase.ts          # Supabase client
+│   └── strava.ts            # Strava API helper
 ├── App.tsx                  # Glavna komponenta
 ├── main.tsx                 # Entry point
 ├── index.css                # Tailwind CSS
