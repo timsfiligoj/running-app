@@ -21,20 +21,20 @@ interface WorkoutItemProps {
 }
 
 const activityLabels: Record<ActivityType, string> = {
-  run: 'Tek',
-  strength: 'Moč',
-  rest: 'Počitek',
-  other: 'Drugo',
+  run: '🏃 Tek',
+  strength: '💪 Moč',
+  rest: '😴 Počitek',
+  other: '📋 Drugo',
 };
 
 const runTypeLabels: Record<RunType, string> = {
-  easy: 'Lahek',
-  tempo: 'Tempo',
-  intervals: 'Intervali',
-  long: 'Dolgi',
-  hills: 'Klanci',
-  test: 'Test',
-  race: 'Tekma',
+  easy: '🏃 Lahek',
+  tempo: '🏃 Tempo',
+  intervals: '🔥 Intervali',
+  long: '🏃 Dolgi',
+  hills: '⛰️ Klanci',
+  test: '📊 Test',
+  race: '🏆 Tekma',
 };
 
 const runTypeColors: Record<RunType, string> = {
