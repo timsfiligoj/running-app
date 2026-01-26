@@ -45,6 +45,7 @@ export type RunType = 'easy' | 'tempo' | 'intervals' | 'long' | 'hills' | 'test'
 
 export interface WorkoutProgress {
   completed: boolean;
+  skipped?: boolean; // true = izpuščen trening (bolezen, poškodba, itd.)
   actualWorkout?: string; // undefined = use default, '' = explicitly cleared
   // New fields
   activityType?: ActivityType;

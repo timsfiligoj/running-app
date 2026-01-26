@@ -9,7 +9,8 @@ Aplikacija za sledenje 11-tedenskemu programu priprave na Istrski polmaraton s c
 ## Funkcionalnosti
 
 - **Accordion prikaz po tednih** - klikni za razširitev/zaprtje
-- **Označevanje treningov** - checkbox za "opravljeno"
+- **Označevanje treningov** - checkbox za "opravljeno" ✅ ali "izpuščeno" ❌
+- **Izpuščeni treningi** - označi treninge, ki si jih moral preskočiti (bolezen, poškodba)
 - **Urejanje opisov** - zabeleži kaj si dejansko naredil
 - **Progress bar** - vizualni prikaz napredka
 - **Barvne oznake** - vsak tip treninga ima svojo barvo
@@ -59,6 +60,7 @@ Tabela `workout_progress`:
 CREATE TABLE workout_progress (
   id TEXT PRIMARY KEY,
   completed BOOLEAN DEFAULT FALSE,
+  skipped BOOLEAN DEFAULT FALSE,
   actual_workout TEXT DEFAULT '',
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );

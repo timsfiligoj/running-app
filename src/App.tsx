@@ -9,6 +9,7 @@ import { supabase } from './lib/supabase';
 interface DbRow {
   id: string;
   completed: boolean;
+  skipped?: boolean;
   actual_workout: string;
   activity_type?: string;
   run_type?: string;
@@ -28,6 +29,7 @@ function App() {
   // Convert DB row to WorkoutProgress
   const dbRowToProgress = (row: DbRow): WorkoutProgress => ({
     completed: row.completed,
+    skipped: row.skipped,
     actualWorkout: row.actual_workout || undefined, // null/empty = use default
     activityType: row.activity_type as WorkoutProgress['activityType'],
     runType: row.run_type as WorkoutProgress['runType'],
@@ -103,6 +105,7 @@ function App() {
       .upsert({
         id: key,
         completed: data.completed,
+        skipped: data.skipped || false,
         actual_workout: data.actualWorkout ?? null, // undefined = null (use default)
         activity_type: data.activityType || null,
         run_type: data.runType || null,

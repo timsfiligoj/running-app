@@ -140,9 +140,21 @@ export function WorkoutItem({
     const newData = {
       ...localData,
       completed: !localData.completed,
+      skipped: false, // Clear skipped when completing
     };
     setLocalData(newData);
     // Complete toggle saves immediately
+    onUpdate(newData);
+  };
+
+  const handleToggleSkip = () => {
+    const newData = {
+      ...localData,
+      skipped: !localData.skipped,
+      completed: false, // Clear completed when skipping
+    };
+    setLocalData(newData);
+    // Skip toggle saves immediately
     onUpdate(newData);
   };
 
@@ -237,7 +249,9 @@ export function WorkoutItem({
 
   return (
     <div className={`bg-white rounded-lg border overflow-hidden ${
-      progress.completed
+      progress.skipped
+        ? 'border-red-400 bg-red-50'
+        : progress.completed
         ? 'border-green-400 bg-green-50'
         : 'border-gray-200'
     }`}>
@@ -246,7 +260,7 @@ export function WorkoutItem({
         className="p-4 cursor-pointer hover:bg-gray-50 transition-colors"
         onClick={() => setIsExpanded(!isExpanded)}
       >
-        {/* Top row: checkbox, day/date, badge, expand */}
+        {/* Top row: checkbox, skip button, day/date, badge, expand */}
         <div className="flex items-center gap-3">
           {/* Checkbox / Checkmark */}
           <button
@@ -257,12 +271,38 @@ export function WorkoutItem({
             className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
               progress.completed
                 ? 'bg-green-500 border-green-500 text-white'
+                : progress.skipped
+                ? 'border-gray-300 hover:border-green-400'
                 : 'border-gray-300 hover:border-green-400'
             }`}
           >
             {progress.completed && (
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+            )}
+          </button>
+
+          {/* Skip button (X) */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              handleToggleSkip();
+            }}
+            title="Izpuščen trening"
+            className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
+              progress.skipped
+                ? 'bg-red-500 border-red-500 text-white'
+                : 'border-gray-300 hover:border-red-400'
+            }`}
+          >
+            {progress.skipped ? (
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            ) : (
+              <svg className="w-3 h-3 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
               </svg>
             )}
           </button>
@@ -295,9 +335,16 @@ export function WorkoutItem({
         </div>
 
         {/* Workout description - full width below */}
-        <p className="text-sm text-gray-700 mt-2 ml-9">
+        <p className={`text-sm mt-2 ml-9 ${
+          progress.skipped
+            ? 'text-red-400 line-through'
+            : 'text-gray-700'
+        }`}>
           {displayedWorkout}
         </p>
+        {progress.skipped && (
+          <p className="text-xs text-red-500 mt-1 ml-9 font-medium">Izpuščeno</p>
+        )}
       </div>
 
       {/* Logged data summary (if any) - when collapsed */}
