@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Week, ProgressData, WorkoutProgress } from '../types';
+import { Week, ProgressData, WorkoutProgress, ActivityType, RunType } from '../types';
 import { WorkoutItem } from './WorkoutItem';
 
 interface WeekAccordionProps {
@@ -7,6 +7,28 @@ interface WeekAccordionProps {
   progress: ProgressData;
   onUpdateWorkout: (weekNum: number, dayIndex: number, data: WorkoutProgress) => void;
 }
+
+// Helper to derive activity type and run type from planned workout type
+const getDefaultsFromPlannedType = (plannedType: string): { activityType: ActivityType; runType?: RunType } => {
+  const runTypes: string[] = ['intervals', 'tempo', 'easy', 'long', 'hills', 'test', 'race', 'activation'];
+
+  if (runTypes.includes(plannedType)) {
+    return {
+      activityType: 'run',
+      runType: plannedType === 'activation' ? 'easy' : plannedType as RunType,
+    };
+  }
+
+  if (plannedType === 'strength') {
+    return { activityType: 'strength' };
+  }
+
+  if (plannedType === 'rest') {
+    return { activityType: 'rest' };
+  }
+
+  return { activityType: 'other' };
+};
 
 export function WeekAccordion({
   week,
@@ -21,18 +43,30 @@ export function WeekAccordion({
     const fromProgress = progress[fromKey] || { completed: false };
     const toProgress = progress[toKey] || { completed: false };
 
-    // Get the current displayed workouts (actual or planned)
+    // Get defaults from planned types
+    const fromDefaults = getDefaultsFromPlannedType(week.days[fromIndex].type);
+    const toDefaults = getDefaultsFromPlannedType(week.days[toIndex].type);
+
+    // Get effective values (saved or default)
     const fromWorkout = fromProgress.actualWorkout || week.days[fromIndex].workout;
     const toWorkout = toProgress.actualWorkout || week.days[toIndex].workout;
+    const fromActivityType = fromProgress.activityType ?? fromDefaults.activityType;
+    const toActivityType = toProgress.activityType ?? toDefaults.activityType;
+    const fromRunType = fromProgress.runType ?? fromDefaults.runType;
+    const toRunType = toProgress.runType ?? toDefaults.runType;
 
-    // Swap the workouts
+    // Swap everything: workout description, activity type, run type
     onUpdateWorkout(week.week, fromIndex, {
       ...fromProgress,
       actualWorkout: toWorkout,
+      activityType: toActivityType,
+      runType: toRunType,
     });
     onUpdateWorkout(week.week, toIndex, {
       ...toProgress,
       actualWorkout: fromWorkout,
+      activityType: fromActivityType,
+      runType: fromRunType,
     });
   };
   const [isOpen, setIsOpen] = useState(false);
