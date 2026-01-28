@@ -78,7 +78,7 @@ export function WeekAccordion({
   ).length;
   const totalCount = nonRestDays.length;
 
-  // Week is complete when all non-rest workouts are either completed OR skipped
+  // Week is done when all non-rest workouts are either completed OR skipped
   const doneCount = week.days.filter(
     (day, i) => {
       if (day.type === 'rest') return false;
@@ -86,7 +86,16 @@ export function WeekAccordion({
       return p?.completed || p?.skipped;
     }
   ).length;
-  const isWeekComplete = totalCount > 0 && doneCount === totalCount;
+  const isWeekDone = totalCount > 0 && doneCount === totalCount;
+
+  // Determine week status: 'perfect' (all completed), 'partial' (some completed), 'skipped' (none completed)
+  const weekStatus = isWeekDone
+    ? completedCount === totalCount
+      ? 'perfect'   // 100% completed
+      : completedCount === 0
+        ? 'skipped'   // All skipped, none completed
+        : 'partial'   // Some completed, some skipped
+    : 'in-progress';
 
   // Total km for this week
   const weekKm = week.days.reduce((sum, _, i) => {
@@ -94,17 +103,25 @@ export function WeekAccordion({
     return sum + (p?.distanceKm || 0);
   }, 0);
 
+  // Styling based on week status
+  const weekStyles = {
+    perfect: 'bg-green-50 border-2 border-green-400',
+    partial: 'bg-yellow-50 border-2 border-yellow-400',
+    skipped: 'bg-red-50 border-2 border-red-400',
+    'in-progress': 'bg-white',
+  };
+  const weekHoverStyles = {
+    perfect: 'hover:bg-green-100',
+    partial: 'hover:bg-yellow-100',
+    skipped: 'hover:bg-red-100',
+    'in-progress': 'hover:bg-gray-50',
+  };
+
   return (
-    <div className={`rounded-xl shadow-md overflow-hidden mb-4 ${
-      isWeekComplete
-        ? 'bg-green-50 border-2 border-green-400'
-        : 'bg-white'
-    }`}>
+    <div className={`rounded-xl shadow-md overflow-hidden mb-4 ${weekStyles[weekStatus]}`}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className={`w-full px-6 py-4 flex items-center justify-between transition-colors ${
-          isWeekComplete ? 'hover:bg-green-100' : 'hover:bg-gray-50'
-        }`}
+        className={`w-full px-6 py-4 flex items-center justify-between transition-colors ${weekHoverStyles[weekStatus]}`}
       >
         <div className="flex-1 text-left">
           <div className="flex items-center gap-3 flex-wrap">
@@ -112,9 +129,19 @@ export function WeekAccordion({
               Teden {week.week}
             </span>
             <span className="text-sm text-gray-500">{week.title}</span>
-            {isWeekComplete && (
+            {weekStatus === 'perfect' && (
               <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full font-medium">
                 ✓ Opravljen
+              </span>
+            )}
+            {weekStatus === 'partial' && (
+              <span className="px-2 py-0.5 bg-yellow-100 text-yellow-700 text-xs rounded-full font-medium">
+                ⚡ Delno opravljen
+              </span>
+            )}
+            {weekStatus === 'skipped' && (
+              <span className="px-2 py-0.5 bg-red-100 text-red-700 text-xs rounded-full font-medium">
+                ✗ Izpuščen
               </span>
             )}
           </div>
@@ -124,7 +151,12 @@ export function WeekAccordion({
         <div className="flex items-center gap-4">
           {weekKm > 0 && (
             <div className="text-right">
-              <span className={`text-sm font-bold ${isWeekComplete ? 'text-green-700' : 'text-blue-600'}`}>
+              <span className={`text-sm font-bold ${
+                weekStatus === 'perfect' ? 'text-green-700' :
+                weekStatus === 'partial' ? 'text-yellow-700' :
+                weekStatus === 'skipped' ? 'text-red-700' :
+                'text-blue-600'
+              }`}>
                 {weekKm.toFixed(1)} km
               </span>
             </div>
@@ -136,7 +168,10 @@ export function WeekAccordion({
             <div className="w-20 bg-gray-200 rounded-full h-2 mt-1">
               <div
                 className={`h-2 rounded-full transition-all duration-300 ${
-                  isWeekComplete ? 'bg-green-500' : 'bg-blue-500'
+                  weekStatus === 'perfect' ? 'bg-green-500' :
+                  weekStatus === 'partial' ? 'bg-yellow-500' :
+                  weekStatus === 'skipped' ? 'bg-red-500' :
+                  'bg-blue-500'
                 }`}
                 style={{ width: `${(doneCount / totalCount) * 100}%` }}
               />
