@@ -267,26 +267,26 @@ export function WorkoutItem({
       >
         {/* Top row: checkbox, skip button, day/date, badge, expand */}
         <div className="flex items-center gap-3">
-          {/* Checkbox / Checkmark */}
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              handleToggleComplete();
-            }}
-            className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
-              progress.completed
-                ? 'bg-green-500 border-green-500 text-white'
-                : progress.skipped
-                ? 'border-gray-300 hover:border-green-400'
-                : 'border-gray-300 hover:border-green-400'
-            }`}
-          >
-            {progress.completed && (
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-              </svg>
-            )}
-          </button>
+          {/* Checkbox / Checkmark - hide when skipped and expanded */}
+          {!(progress.skipped && isExpanded) && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleToggleComplete();
+              }}
+              className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
+                progress.completed
+                  ? 'bg-green-500 border-green-500 text-white'
+                  : 'border-gray-300 hover:border-green-400'
+              }`}
+            >
+              {progress.completed && (
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+              )}
+            </button>
+          )}
 
           {/* Skip button (X) - only show when expanded OR when already skipped */}
           {(isExpanded || progress.skipped) && (
