@@ -173,7 +173,7 @@ export function WeekAccordion({
                   weekStatus === 'skipped' ? 'bg-red-500' :
                   'bg-blue-500'
                 }`}
-                style={{ width: `${(doneCount / totalCount) * 100}%` }}
+                style={{ width: `${(completedCount / totalCount) * 100}%` }}
               />
             </div>
           </div>
