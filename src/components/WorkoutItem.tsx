@@ -138,8 +138,8 @@ export function WorkoutItem({
 
   const badgeInfo = getBadgeInfo();
 
-  // Show actual workout if set, otherwise planned
-  const displayedWorkout = localData.actualWorkout || day.workout;
+  // Show actual workout if set (including empty string), otherwise planned
+  const displayedWorkout = localData.actualWorkout ?? day.workout;
 
   const handleToggleComplete = () => {
     const newData = {
@@ -443,7 +443,7 @@ export function WorkoutItem({
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Opis treninga</label>
             <textarea
-              value={localData.actualWorkout || day.workout}
+              value={localData.actualWorkout ?? day.workout}
               onChange={(e) => handleActualWorkoutChange(e.target.value)}
               rows={2}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
