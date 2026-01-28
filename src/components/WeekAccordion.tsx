@@ -77,13 +77,34 @@ export function WeekAccordion({
     (day, i) => day.type !== 'rest' && progress[`${week.week}-${i}`]?.completed
   ).length;
   const totalCount = nonRestDays.length;
-  const isWeekComplete = totalCount > 0 && completedCount === totalCount;
+
+  // Week is complete when all non-rest workouts are either completed OR skipped
+  const doneCount = week.days.filter(
+    (day, i) => {
+      if (day.type === 'rest') return false;
+      const p = progress[`${week.week}-${i}`];
+      return p?.completed || p?.skipped;
+    }
+  ).length;
+  const isWeekComplete = totalCount > 0 && doneCount === totalCount;
+
+  // Total km for this week
+  const weekKm = week.days.reduce((sum, _, i) => {
+    const p = progress[`${week.week}-${i}`];
+    return sum + (p?.distanceKm || 0);
+  }, 0);
 
   return (
-    <div className="bg-white rounded-xl shadow-md overflow-hidden mb-4">
+    <div className={`rounded-xl shadow-md overflow-hidden mb-4 ${
+      isWeekComplete
+        ? 'bg-green-50 border-2 border-green-400'
+        : 'bg-white'
+    }`}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
+        className={`w-full px-6 py-4 flex items-center justify-between transition-colors ${
+          isWeekComplete ? 'hover:bg-green-100' : 'hover:bg-gray-50'
+        }`}
       >
         <div className="flex-1 text-left">
           <div className="flex items-center gap-3 flex-wrap">
@@ -101,6 +122,13 @@ export function WeekAccordion({
           <div className="mt-0.5 text-xs text-gray-500">{week.focus}</div>
         </div>
         <div className="flex items-center gap-4">
+          {weekKm > 0 && (
+            <div className="text-right">
+              <span className={`text-sm font-bold ${isWeekComplete ? 'text-green-700' : 'text-blue-600'}`}>
+                {weekKm.toFixed(1)} km
+              </span>
+            </div>
+          )}
           <div className="text-right">
             <span className="text-sm font-medium text-gray-600">
               {completedCount}/{totalCount}
@@ -110,7 +138,7 @@ export function WeekAccordion({
                 className={`h-2 rounded-full transition-all duration-300 ${
                   isWeekComplete ? 'bg-green-500' : 'bg-blue-500'
                 }`}
-                style={{ width: `${(completedCount / totalCount) * 100}%` }}
+                style={{ width: `${(doneCount / totalCount) * 100}%` }}
               />
             </div>
           </div>
