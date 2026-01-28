@@ -267,8 +267,8 @@ export function WorkoutItem({
       >
         {/* Top row: checkbox, skip button, day/date, badge, expand */}
         <div className="flex items-center gap-3">
-          {/* Checkbox / Checkmark - hide when skipped and expanded */}
-          {!(progress.skipped && isExpanded) && (
+          {/* Checkbox / Checkmark - hide when skipped and collapsed */}
+          {!(progress.skipped && !isExpanded) && (
             <button
               onClick={(e) => {
                 e.stopPropagation();
