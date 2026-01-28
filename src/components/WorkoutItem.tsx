@@ -288,29 +288,31 @@ export function WorkoutItem({
             )}
           </button>
 
-          {/* Skip button (X) */}
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              handleToggleSkip();
-            }}
-            title="Izpuščen trening"
-            className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
-              progress.skipped
-                ? 'bg-red-500 border-red-500 text-white'
-                : 'border-gray-300 hover:border-red-400'
-            }`}
-          >
-            {progress.skipped ? (
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            ) : (
-              <svg className="w-3 h-3 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            )}
-          </button>
+          {/* Skip button (X) - only show when expanded OR when already skipped */}
+          {(isExpanded || progress.skipped) && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleToggleSkip();
+              }}
+              title="Izpuščen trening"
+              className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
+                progress.skipped
+                  ? 'bg-red-500 border-red-500 text-white'
+                  : 'border-gray-300 hover:border-red-400'
+              }`}
+            >
+              {progress.skipped ? (
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              ) : (
+                <svg className="w-3 h-3 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              )}
+            </button>
+          )}
 
           {/* Day and date */}
           <div className="flex-shrink-0">
