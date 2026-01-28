@@ -71,17 +71,27 @@ export function WeekAccordion({
   };
   const [isOpen, setIsOpen] = useState(false);
 
-  // Exclude rest days from counts
-  const nonRestDays = week.days.filter(day => day.type !== 'rest');
+  // Helper to check if a day is rest (user selection overrides planned type)
+  const isRestDay = (dayIndex: number) => {
+    const p = progress[`${week.week}-${dayIndex}`];
+    // User's activityType selection takes priority, otherwise use planned type
+    if (p?.activityType) {
+      return p.activityType === 'rest';
+    }
+    return week.days[dayIndex].type === 'rest';
+  };
+
+  // Exclude rest days from counts (based on effective type, not just planned)
+  const nonRestDays = week.days.filter((_, i) => !isRestDay(i));
   const completedCount = week.days.filter(
-    (day, i) => day.type !== 'rest' && progress[`${week.week}-${i}`]?.completed
+    (_, i) => !isRestDay(i) && progress[`${week.week}-${i}`]?.completed
   ).length;
   const totalCount = nonRestDays.length;
 
   // Week is done when all non-rest workouts are either completed OR skipped
   const doneCount = week.days.filter(
-    (day, i) => {
-      if (day.type === 'rest') return false;
+    (_, i) => {
+      if (isRestDay(i)) return false;
       const p = progress[`${week.week}-${i}`];
       return p?.completed || p?.skipped;
     }
