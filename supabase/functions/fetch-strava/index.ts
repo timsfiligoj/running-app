@@ -81,6 +81,8 @@ Deno.serve(async (req) => {
     const distanceKm = activity.distance ? Math.round(activity.distance / 10) / 100 : null;
     // Moving time is in seconds
     const durationSeconds = activity.moving_time || null;
+    // Total elevation gain in meters (rounded to whole number)
+    const elevationMeters = activity.total_elevation_gain ? Math.round(activity.total_elevation_gain) : null;
     // Average heart rate (if available) - rounded to whole number
     const avgHeartRate = activity.average_heartrate ? Math.round(activity.average_heartrate) : null;
 
@@ -88,6 +90,7 @@ Deno.serve(async (req) => {
       JSON.stringify({
         distanceKm,
         durationSeconds,
+        elevationMeters,
         avgHeartRate,
         title: activity.name || null,
       }),

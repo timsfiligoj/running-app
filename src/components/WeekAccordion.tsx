@@ -113,6 +113,12 @@ export function WeekAccordion({
     return sum + (p?.distanceKm || 0);
   }, 0);
 
+  // Total elevation for this week
+  const weekElevation = week.days.reduce((sum, _, i) => {
+    const p = progress[`${week.week}-${i}`];
+    return sum + (p?.elevationMeters || 0);
+  }, 0);
+
   // Styling based on week status
   const weekStyles = {
     perfect: 'bg-green-50 border-2 border-green-400',
@@ -160,7 +166,8 @@ export function WeekAccordion({
         </div>
         <div className="flex items-center gap-4">
           {weekKm > 0 && (
-            <div className="text-right">
+            <div className="text-right flex items-center gap-1">
+              <span className="text-sm">🏃</span>
               <span className={`text-sm font-bold ${
                 weekStatus === 'perfect' ? 'text-green-700' :
                 weekStatus === 'partial' ? 'text-yellow-700' :
@@ -168,6 +175,19 @@ export function WeekAccordion({
                 'text-blue-600'
               }`}>
                 {weekKm.toFixed(1)} km
+              </span>
+            </div>
+          )}
+          {weekElevation > 0 && (
+            <div className="text-right flex items-center gap-1">
+              <span className="text-sm">⛰️</span>
+              <span className={`text-sm font-bold ${
+                weekStatus === 'perfect' ? 'text-green-700' :
+                weekStatus === 'partial' ? 'text-yellow-700' :
+                weekStatus === 'skipped' ? 'text-red-700' :
+                'text-orange-600'
+              }`}>
+                {weekElevation} m
               </span>
             </div>
           )}

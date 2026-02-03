@@ -52,6 +52,7 @@ export interface WorkoutProgress {
   runType?: RunType;
   distanceKm?: number;
   durationSeconds?: number; // stored as seconds for easier calculations
+  elevationMeters?: number; // total elevation gain in meters
   avgHeartRate?: number;
   comment?: string;
   stravaUrl?: string;

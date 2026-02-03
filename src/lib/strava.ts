@@ -3,6 +3,7 @@ import { supabase } from './supabase';
 export interface StravaData {
   distanceKm: number | null;
   durationSeconds: number | null;
+  elevationMeters: number | null;
   avgHeartRate: number | null;
   title: string | null;
 }
@@ -49,6 +50,7 @@ export async function fetchStravaData(stravaUrl: string): Promise<FetchStravaRes
       data: {
         distanceKm: data.distanceKm,
         durationSeconds: data.durationSeconds,
+        elevationMeters: data.elevationMeters,
         avgHeartRate: data.avgHeartRate,
         title: data.title,
       },

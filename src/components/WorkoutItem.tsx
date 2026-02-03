@@ -189,6 +189,11 @@ export function WorkoutItem({
     setHasChanges(true);
   };
 
+  const handleElevationChange = (value: string) => {
+    const num = parseInt(value);
+    updateLocalData({ elevationMeters: isNaN(num) ? undefined : num });
+  };
+
   const handleHeartRateChange = (value: string) => {
     const num = parseInt(value);
     updateLocalData({ avgHeartRate: isNaN(num) ? undefined : num });
@@ -223,6 +228,7 @@ export function WorkoutItem({
         ...prev,
         ...(result.data!.distanceKm !== null && { distanceKm: result.data!.distanceKm }),
         ...(result.data!.durationSeconds !== null && { durationSeconds: result.data!.durationSeconds }),
+        ...(result.data!.elevationMeters !== null && { elevationMeters: result.data!.elevationMeters }),
         ...(result.data!.avgHeartRate !== null && { avgHeartRate: result.data!.avgHeartRate }),
       }));
       // Update duration input
@@ -355,7 +361,7 @@ export function WorkoutItem({
       </div>
 
       {/* Logged data summary (if any) - when collapsed */}
-      {!isExpanded && (localData.distanceKm || localData.durationSeconds || localData.avgHeartRate) && (
+      {!isExpanded && (localData.distanceKm || localData.durationSeconds || localData.elevationMeters || localData.avgHeartRate) && (
         <div className="px-4 pb-3 flex flex-wrap gap-3 text-sm">
           {localData.distanceKm && (
             <span className="text-gray-600">
@@ -365,6 +371,11 @@ export function WorkoutItem({
           {localData.durationSeconds && (
             <span className="text-gray-600">
               <span className="font-medium">{formatDuration(localData.durationSeconds)}</span>
+            </span>
+          )}
+          {localData.elevationMeters && (
+            <span className="text-orange-600">
+              <span className="font-medium">{localData.elevationMeters}</span> m
             </span>
           )}
           {pace && (
@@ -503,8 +514,8 @@ export function WorkoutItem({
                 </div>
               </div>
 
-              {/* Distance, Duration, HR */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {/* Distance, Duration, Elevation, HR, Tempo */}
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Dolžina (km)</label>
                   <input
@@ -523,6 +534,16 @@ export function WorkoutItem({
                     value={durationInput}
                     onChange={(e) => handleDurationChange(e.target.value)}
                     placeholder="1:05:30"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Vzpon (m)</label>
+                  <input
+                    type="number"
+                    value={localData.elevationMeters || ''}
+                    onChange={(e) => handleElevationChange(e.target.value)}
+                    placeholder="150"
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   />
                 </div>

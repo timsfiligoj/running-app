@@ -15,6 +15,7 @@ interface DbRow {
   run_type?: string;
   distance_km?: number;
   duration_seconds?: number;
+  elevation_meters?: number;
   avg_heart_rate?: number;
   comment?: string;
   strava_url?: string;
@@ -35,6 +36,7 @@ function App() {
     runType: row.run_type as WorkoutProgress['runType'],
     distanceKm: row.distance_km,
     durationSeconds: row.duration_seconds,
+    elevationMeters: row.elevation_meters,
     avgHeartRate: row.avg_heart_rate,
     comment: row.comment,
     stravaUrl: row.strava_url,
@@ -111,6 +113,7 @@ function App() {
         run_type: data.runType || null,
         distance_km: data.distanceKm || null,
         duration_seconds: data.durationSeconds || null,
+        elevation_meters: data.elevationMeters || null,
         avg_heart_rate: data.avgHeartRate || null,
         comment: data.comment || null,
         strava_url: data.stravaUrl || null,
