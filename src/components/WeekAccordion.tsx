@@ -137,10 +137,11 @@ export function WeekAccordion({
     <div className={`rounded-xl shadow-md overflow-hidden mb-4 ${weekStyles[weekStatus]}`}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className={`w-full px-6 py-4 flex items-center justify-between transition-colors ${weekHoverStyles[weekStatus]}`}
+        className={`w-full px-4 sm:px-6 py-4 transition-colors ${weekHoverStyles[weekStatus]}`}
       >
-        <div className="flex-1 text-left">
-          <div className="flex items-center gap-3 flex-wrap">
+        {/* Top row: Title, progress, chevron */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 flex-wrap flex-1 min-w-0">
             <span className="font-bold text-lg text-gray-800">
               Teden {week.week}
             </span>
@@ -161,68 +162,76 @@ export function WeekAccordion({
               </span>
             )}
           </div>
-          <div className="mt-1 text-sm text-blue-600 font-medium">{week.phase}</div>
-          <div className="mt-0.5 text-xs text-gray-500">{week.focus}</div>
-        </div>
-        <div className="flex items-center gap-4">
-          {weekKm > 0 && (
-            <div className="text-right flex items-center gap-1">
-              <span className="text-sm">🏃</span>
-              <span className={`text-sm font-bold ${
-                weekStatus === 'perfect' ? 'text-green-700' :
-                weekStatus === 'partial' ? 'text-yellow-700' :
-                weekStatus === 'skipped' ? 'text-red-700' :
-                'text-blue-600'
-              }`}>
-                {weekKm.toFixed(1)} km
+          <div className="flex items-center gap-3 flex-shrink-0 ml-2">
+            <div className="text-right">
+              <span className="text-sm font-medium text-gray-600">
+                {completedCount}/{totalCount}
               </span>
+              <div className="w-16 sm:w-20 bg-gray-200 rounded-full h-2 mt-1">
+                <div
+                  className={`h-2 rounded-full transition-all duration-300 ${
+                    weekStatus === 'perfect' ? 'bg-green-500' :
+                    weekStatus === 'partial' ? 'bg-yellow-500' :
+                    weekStatus === 'skipped' ? 'bg-red-500' :
+                    'bg-blue-500'
+                  }`}
+                  style={{ width: `${(completedCount / totalCount) * 100}%` }}
+                />
+              </div>
             </div>
-          )}
-          {weekElevation > 0 && (
-            <div className="text-right flex items-center gap-1">
-              <span className="text-sm">⛰️</span>
-              <span className={`text-sm font-bold ${
-                weekStatus === 'perfect' ? 'text-green-700' :
-                weekStatus === 'partial' ? 'text-yellow-700' :
-                weekStatus === 'skipped' ? 'text-red-700' :
-                'text-orange-600'
-              }`}>
-                {weekElevation} m
-              </span>
-            </div>
-          )}
-          <div className="text-right">
-            <span className="text-sm font-medium text-gray-600">
-              {completedCount}/{totalCount}
-            </span>
-            <div className="w-20 bg-gray-200 rounded-full h-2 mt-1">
-              <div
-                className={`h-2 rounded-full transition-all duration-300 ${
-                  weekStatus === 'perfect' ? 'bg-green-500' :
-                  weekStatus === 'partial' ? 'bg-yellow-500' :
-                  weekStatus === 'skipped' ? 'bg-red-500' :
-                  'bg-blue-500'
-                }`}
-                style={{ width: `${(completedCount / totalCount) * 100}%` }}
+            <svg
+              className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${
+                isOpen ? 'rotate-180' : ''
+              }`}
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M19 9l-7 7-7-7"
               />
-            </div>
+            </svg>
           </div>
-          <svg
-            className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${
-              isOpen ? 'rotate-180' : ''
-            }`}
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M19 9l-7 7-7-7"
-            />
-          </svg>
         </div>
+
+        {/* Stats row: km and elevation */}
+        {(weekKm > 0 || weekElevation > 0) && (
+          <div className="flex items-center gap-4 mt-2">
+            {weekKm > 0 && (
+              <div className="flex items-center gap-1">
+                <span className="text-sm">🏃</span>
+                <span className={`text-sm font-bold ${
+                  weekStatus === 'perfect' ? 'text-green-700' :
+                  weekStatus === 'partial' ? 'text-yellow-700' :
+                  weekStatus === 'skipped' ? 'text-red-700' :
+                  'text-blue-600'
+                }`}>
+                  {weekKm.toFixed(1)} km
+                </span>
+              </div>
+            )}
+            {weekElevation > 0 && (
+              <div className="flex items-center gap-1">
+                <span className="text-sm">⛰️</span>
+                <span className={`text-sm font-bold ${
+                  weekStatus === 'perfect' ? 'text-green-700' :
+                  weekStatus === 'partial' ? 'text-yellow-700' :
+                  weekStatus === 'skipped' ? 'text-red-700' :
+                  'text-orange-600'
+                }`}>
+                  {weekElevation} m
+                </span>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Phase and focus */}
+        <div className="mt-1 text-sm text-blue-600 font-medium text-left">{week.phase}</div>
+        <div className="mt-0.5 text-xs text-gray-500 text-left">{week.focus}</div>
       </button>
 
       {isOpen && (
