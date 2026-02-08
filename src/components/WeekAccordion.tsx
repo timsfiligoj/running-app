@@ -48,8 +48,8 @@ export function WeekAccordion({
     const toDefaults = getDefaultsFromPlannedType(week.days[toIndex].type);
 
     // Get effective values (saved or default)
-    const fromWorkout = fromProgress.actualWorkout || week.days[fromIndex].workout;
-    const toWorkout = toProgress.actualWorkout || week.days[toIndex].workout;
+    const fromWorkout = fromProgress.actualWorkout ?? week.days[fromIndex].workout;
+    const toWorkout = toProgress.actualWorkout ?? week.days[toIndex].workout;
     const fromActivityType = fromProgress.activityType ?? fromDefaults.activityType;
     const toActivityType = toProgress.activityType ?? toDefaults.activityType;
     const fromRunType = fromProgress.runType ?? fromDefaults.runType;

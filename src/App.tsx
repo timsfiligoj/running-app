@@ -31,7 +31,7 @@ function App() {
   const dbRowToProgress = (row: DbRow): WorkoutProgress => ({
     completed: row.completed,
     skipped: row.skipped,
-    actualWorkout: row.actual_workout || undefined, // null/empty = use default
+    actualWorkout: row.actual_workout ?? undefined, // null = use default, '' = explicitly cleared
     activityType: row.activity_type as WorkoutProgress['activityType'],
     runType: row.run_type as WorkoutProgress['runType'],
     distanceKm: row.distance_km,
