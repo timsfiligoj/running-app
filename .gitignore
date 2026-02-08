@@ -3,3 +3,5 @@ dist
 .DS_Store
 *.local
 .vscode/
+.omc/
+week3-plan-context.json
