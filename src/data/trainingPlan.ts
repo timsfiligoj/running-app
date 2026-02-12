@@ -40,7 +40,7 @@ export const trainingPlan: TrainingPlan = {
       "week": 3,
       "title": "9. feb - 15. feb",
       "phase": "FAZA 1: GRADNJA BAZE + KLANCI",
-      "focus": "Polna intenzivnost klancev",
+      "focus": "Močnejši intervali in tempo tek",
       "startDate": "2026-02-09",
       "days": [
         { "day": "Pon", "type": "strength", "workout": "Moč nog (30 min): Počepi s skokom 3x8, Izpadni koraki s skokom 3x8/noga, Box jumps 3x10, Dvigi na prste 3x15, Plank 3x45s" },
