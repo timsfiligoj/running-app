@@ -1,0 +1,195 @@
+{
+  "purpose": "Kontekst za sestavo trenažnega plana za Teden 4 (17.-23. feb 2026) na podlagi dejansko opravljenih treningov v tednih 1, 2 in 3.",
+  "athlete": {
+    "name": "Tim Šfiligoj",
+    "goal": "Istrski polmaraton 12. april 2026 - sub 1:35 (4:30/km)",
+    "currentPhase": "FAZA 1: GRADNJA BAZE + KLANCI (tedni 1-4)",
+    "week4Type": "REGENERACIJSKI TEDEN (deload) - zmanjšan volumen, ohranjena intenzivnost"
+  },
+  "paceZones": {
+    "easy": "5:30-6:00 /km",
+    "long": "5:15-5:30 /km",
+    "hmTempo": "4:25-4:35 /km",
+    "threshold": "4:05-4:15 /km",
+    "vo2max": "3:40-3:50 /km"
+  },
+  "hrZones": {
+    "z1": "< 139 bpm (regeneracija)",
+    "z2": "140-155 bpm (aerobna baza)",
+    "z3": "156-170 bpm (siva cona - IZOGIBAJ SE)",
+    "z4": "171-185 bpm (tempo/prag)",
+    "z5": "> 186 bpm (VO2max)"
+  },
+  "week1": {
+    "dates": "27. jan - 2. feb 2026",
+    "focus": "Vstop v program, polarizacija, klanci na dolgem teku",
+    "summary": {
+      "totalRunKm": 46.13,
+      "totalElevation": 298,
+      "workoutsCompleted": "7/7",
+      "notes": "Dober prvi teden. Intervali progresivni (4:10→3:50). Dolgi tek 16km s 221m višincev."
+    }
+  },
+  "week2": {
+    "dates": "3. feb - 9. feb 2026",
+    "focus": "Uvedba klančnih intervalov (70-80% napora)",
+    "summary": {
+      "totalRunKm": 48.15,
+      "totalElevation": 493,
+      "workoutsCompleted": "7/7",
+      "notes": "Okužba sredi tedna (sreda počitek). Klanci v dežju 8x namesto 10x. Dolgi tek 19km z 188m višincev. Progressive tempo 4:45→4:15."
+    }
+  },
+  "week3": {
+    "dates": "10. feb - 16. feb 2026",
+    "focus": "Močnejši intervali in tempo tek",
+    "summary": {
+      "totalRunKm": 48.72,
+      "totalElevation": 304,
+      "workoutsCompleted": "7/7",
+      "notes": "Želodčne težave v sredo (prekinil tek). Intervale spremenil v 3x2km (4:10→3:58). Zamenjal klance in moč. 20km dolgi tek z zadnjima 2km fast, 264m višincev."
+    },
+    "days": [
+      {
+        "day": "Pon 10.2.",
+        "planned": "Moč nog (30 min): pliometrija",
+        "actual": "Moč nog - pliometrija (počepi s skokom, box jumps, izpadni koraki, dvigi na prste, enonožni počepi, plank 3x45s)",
+        "type": "strength",
+        "status": "completed"
+      },
+      {
+        "day": "Tor 11.2.",
+        "planned": "Intervali: 5x 1000m @ 4:08/km",
+        "actual": "3x2km @ 4:10→4:05→3:58 (odmor 2min)",
+        "type": "intervals",
+        "status": "completed",
+        "data": {
+          "distanceKm": 10.01,
+          "durationSeconds": 2661,
+          "avgPace": "4:26/km",
+          "avgHeartRate": 164,
+          "elevationMeters": 13,
+          "stravaUrl": "https://www.strava.com/activities/17348677772"
+        },
+        "comment": "Pretty good. Se poznajo klanci in moč nog."
+      },
+      {
+        "day": "Sre 12.2.",
+        "planned": "Moč nog + core (30 min)",
+        "actual": "6.6km easy - prekinil",
+        "type": "easy",
+        "status": "completed",
+        "data": {
+          "distanceKm": 6.63,
+          "durationSeconds": 2335,
+          "avgPace": "5:52/km",
+          "avgHeartRate": 140,
+          "elevationMeters": 11,
+          "stravaUrl": "https://www.strava.com/activities/17364886242"
+        },
+        "comment": "Slabost v želodcu, prekinil po 2 krogih."
+      },
+      {
+        "day": "Čet 13.2.",
+        "planned": "Klanci: 8x 400m @ hard effort",
+        "actual": "Moč nog (počepi, izpadni koraki, dvigi, enonožna stoja 2x30s, plank 2x45s)",
+        "type": "strength",
+        "status": "completed",
+        "comment": "Zamenjal klance z močjo - potrebna regeneracija po slabosti"
+      },
+      {
+        "day": "Pet 14.2.",
+        "planned": "Regeneracija",
+        "actual": "2km WU + 6km@4:40 + 2km@4:20 + 2km CD",
+        "type": "tempo",
+        "status": "completed",
+        "data": {
+          "distanceKm": 12.07,
+          "durationSeconds": 3477,
+          "avgPace": "4:48/km",
+          "avgHeartRate": 162,
+          "elevationMeters": 16,
+          "stravaUrl": "https://www.strava.com/activities/17383057279"
+        },
+        "comment": "Kar dober filing na 4:40."
+      },
+      {
+        "day": "Sob 15.2.",
+        "planned": "Lahek tek: 10 km @ 5:30-6:00/km",
+        "actual": "Regeneracija",
+        "type": "rest",
+        "status": "completed"
+      },
+      {
+        "day": "Ned 16.2.",
+        "planned": "Dolgi tek: 20 km @ 5:15-5:30/km, zadnjih 5 km @ 4:45/km",
+        "actual": "20km - zadnja 2km fast",
+        "type": "long",
+        "status": "completed",
+        "data": {
+          "distanceKm": 20.01,
+          "durationSeconds": 6530,
+          "avgPace": "5:26/km",
+          "avgHeartRate": 153,
+          "elevationMeters": 264,
+          "stravaUrl": "https://www.strava.com/activities/17403770418"
+        }
+      }
+    ]
+  },
+  "week4OriginalPlan": {
+    "dates": "17. feb - 23. feb 2026",
+    "focus": "Regeneracijski teden (deload)",
+    "days": [
+      { "day": "Pon", "type": "rest", "workout": "Lahka mobilnost, raztezanje (deload teden!)" },
+      { "day": "Tor", "type": "intervals", "workout": "Intervali: 10 min ogrevanje + 4x 1000m @ 4:10/km (odmor 3 min) + 10 min ohlajanje" },
+      { "day": "Sre", "type": "easy", "workout": "Lahek tek: 6 km @ 5:30-6:00/km" },
+      { "day": "Čet", "type": "strength", "workout": "Moč - LAHKA (15 min): Počepi 2x10, Plank 2x30s, Enonožna stoja 2x15s/noga, Raztezanje" },
+      { "day": "Pet", "type": "tempo", "workout": "Tempo: 10 min ogrevanje + 15 min @ 4:35/km + 10 min ohlajanje" },
+      { "day": "Sob", "type": "rest", "workout": "Počitek" },
+      { "day": "Ned", "type": "long", "workout": "Dolgi tek: 14 km @ 5:20/km (brez pospeševanja)" }
+    ]
+  },
+  "keyObservations": {
+    "strengths": [
+      "3 tedne zapored vse treninge opravil (21/21 = 100% konsistentnost)",
+      "Volumen stabilen: 46 → 48 → 49 km",
+      "Odlična progresija na intervalih: Teden 1 (4:10→3:50), Teden 3 (3x2km: 4:10→3:58)",
+      "Dolgi teki z veliko višinskimi metri (221m, 188m, 264m)",
+      "HR na dolgih tekih konsistentno v Z2/Z3 (152-159 bpm)",
+      "Odličen tempo tek v Tednu 3: 6km@4:40 + 2km@4:20 (162 bpm)"
+    ],
+    "concerns": [
+      "Želodčne težave v sredo Tedna 3 - prekinil tek",
+      "Tendenca k zamenjavi dni (klanci ↔ moč, tempo ↔ regeneracija)",
+      "Easy teki skoraj nikoli pod 140 bpm (cilj Z2)",
+      "3 tedne brez pravega easy/recovery teka pod 140 bpm",
+      "Sobote večinoma regeneracija namesto lahkih tekov"
+    ],
+    "progressionWeek1to3": {
+      "volumeKm": "46.13 → 48.15 → 48.72 (konsistentno ~48km)",
+      "elevationTotal": "298m → 493m → 304m",
+      "longRunKm": "16.01 → 19.13 → 20.01 (progresivno)",
+      "intervalPace": "4:10→3:50 (Teden 1) | 3x2km 4:10→3:58 (Teden 3) - odlično!",
+      "tempoPace": "6km@4:30 (T1) → 7km@4:45→4:15 (T2) → 6km@4:40+2km@4:20 (T3)"
+    },
+    "deloadReadiness": {
+      "status": "POTREBEN",
+      "reasons": [
+        "3 tedne zapored polna obremenitev",
+        "Želodčne težave v Tednu 3 - znak prenapornosti?",
+        "Volumen in intenzivnost konstantno visoka",
+        "Ni bilo pravih regeneracijskih tekov",
+        "Klasična 3+1 struktura (3 tedne build, 1 teden deload)"
+      ],
+      "deloadPrinciples": [
+        "Volumen -30 do -40% (cilj: ~30-35km namesto 48km)",
+        "Intenzivnost OHRANJENA (intervali in tempo ostanejo, samo krajši)",
+        "Več počitka in regeneracije",
+        "Lahka moč namesto težke",
+        "OBVEZEN vsaj 1 pravi easy tek pod 140 bpm"
+      ]
+    }
+  },
+  "requestForClaude": "Na podlagi zgornjih podatkov o opravljenih treningih v tednih 1, 2 in 3, pripravi REGENERACIJSKI plan za Teden 4 (17.-23. feb 2026). POMEMBNO: To je deload teden! Upoštevaj:\n\n1. **Volumen**: Zmanjšaj na ~30-35km (trenutno 48km)\n2. **Intenzivnost**: OHRANI hitrosti, ampak krajši intervali/tempo (4x1000m namesto 5x, 15min tempo namesto 25min)\n3. **Želodčne težave**: V Tednu 3 je imel slabost - morda preventivno več počitka?\n4. **Easy teki**: VSAJ 1 tek OBVEZNO pod 140 bpm (Z2) - tega še ni naredil v 3 tednih!\n5. **Moč**: Samo lahka moč (15-20min) ali regeneracija\n6. **Dolgi tek**: Skrajšaj na 12-14km brez pospeševanja\n7. **Počitek**: Vsaj 2-3 dni počitka ali zelo lahke aktivnosti\n8. **Prilagodljivost**: Dovoli zamenjavo dni, ker jo vedno izvede\n\nCilj deload tedna: Telesna in mentalna regeneracija za FAZO 2 (HM specifika), ki se začne v Tednu 5. Odgovori v slovenščini."
+}

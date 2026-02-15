@@ -1,0 +1,95 @@
+{
+  "dates": "10. feb - 16. feb 2026",
+  "focus": "Močnejši intervali in tempo tek",
+  "days": [
+    {
+      "day": "10.2. (Pon)",
+      "planned": "Moč nog (30 min): eksplozivne vaje, pliometrija",
+      "type": "strength",
+      "status": "completed",
+      "actual": "1. Počepi s skokom: 3x10; 2. Box jumps: 3x8; 3. Izpadni koraki: 3x8; 4. Dvigi na prste: 3x15; 5. Enonožni počepi na klop: 3x8; 6. Plank: 3x45s"
+    },
+    {
+      "day": "11.2. (Tor)",
+      "planned": "Intervali: 10 min ogrevanje + 5x 1000m @ 4:08/km (odmor 3 min) + 10 min ohlajanje",
+      "type": "intervals",
+      "status": "completed",
+      "actual": "3x2km (4:10 - 4:05 - 3:58) // 2min rest",
+      "data": {
+        "distanceKm": 10.01,
+        "durationSeconds": 2661,
+        "avgPace": "4:26/km",
+        "avgHeartRate": 164,
+        "elevationMeters": 13,
+        "stravaUrl": "https://www.strava.com/activities/17348677772"
+      },
+      "comment": "Pretty good. Se poznajo klanci in moč nog."
+    },
+    {
+      "day": "12.2. (Sre)",
+      "planned": "Moč nog + core (30 min)",
+      "type": "strength",
+      "status": "completed",
+      "actual": "Easy & Shorty",
+      "data": {
+        "distanceKm": 6.63,
+        "durationSeconds": 2335,
+        "avgPace": "5:52/km",
+        "avgHeartRate": 140,
+        "elevationMeters": 11,
+        "stravaUrl": "https://www.strava.com/activities/17364886242"
+      },
+      "comment": "Slabost v želodcu, prekinil po 2 krogih."
+    },
+    {
+      "day": "13.2. (Čet)",
+      "planned": "Klanci: 10 min ogrevanje + 8x 400m klanec @ hard effort + 10 min ohlajanje",
+      "type": "hills",
+      "status": "completed",
+      "actual": "1. Počepi: 2x12\n2. Izpadni koraki: 2x10/noga\n3. Dvigi na prste: 2x15\n4. Enonožna stoja: 2x30s/noga\n5. Plank: 2x45s\n6. Stranski plank: 2x30s/stran"
+    },
+    {
+      "day": "14.2. (Pet)",
+      "planned": "Regeneracija",
+      "type": "rest",
+      "status": "completed",
+      "actual": "2km WU + 6km@4:40 + 2km@4:20 + 2km CD",
+      "data": {
+        "distanceKm": 12.07,
+        "durationSeconds": 3477,
+        "avgPace": "4:48/km",
+        "avgHeartRate": 162,
+        "elevationMeters": 16,
+        "stravaUrl": "https://www.strava.com/activities/17383057279"
+      },
+      "comment": "Kar dober filing na 4:40."
+    },
+    {
+      "day": "15.2. (Sob)",
+      "planned": "Lahek tek: 10 km @ 5:30-6:00/km, HR POD 140 bpm!",
+      "type": "easy",
+      "status": "completed"
+    },
+    {
+      "day": "16.2. (Ned)",
+      "planned": "Dolgi tek: 20 km @ 5:15-5:30/km, zadnjih 5 km @ 4:45/km (progresivni)",
+      "type": "long",
+      "status": "completed",
+      "actual": "20km - last 2km fast",
+      "data": {
+        "distanceKm": 20.01,
+        "durationSeconds": 6530,
+        "avgPace": "5:26/km",
+        "avgHeartRate": 153,
+        "elevationMeters": 264,
+        "stravaUrl": "https://www.strava.com/activities/17403770418"
+      }
+    }
+  ],
+  "summary": {
+    "totalRunKm": 48.72,
+    "totalElevation": 304,
+    "workoutsCompleted": "7/7",
+    "notes": "Avtomatsko izvoženo iz aplikacije"
+  }
+}
