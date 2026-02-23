@@ -5,13 +5,15 @@ interface HeaderProps {
 }
 
 export function Header({ syncing }: HeaderProps) {
-  // Race date: April 12, 2026
-  const raceDate = new Date('2026-04-12');
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  // Race date: April 12, 2026 at 9:00 CET (Ljubljana)
+  // Use local date components to avoid UTC vs CET offset issues
+  const raceYear = 2026, raceMonth = 3, raceDay = 12; // month is 0-indexed
+  const now = new Date();
+  const todayLocal = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const raceDateLocal = new Date(raceYear, raceMonth, raceDay);
 
-  const diffTime = raceDate.getTime() - today.getTime();
-  const daysUntilRace = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  const diffTime = raceDateLocal.getTime() - todayLocal.getTime();
+  const daysUntilRace = Math.round(diffTime / (1000 * 60 * 60 * 24));
 
   // Use BASE_URL for GitHub Pages compatibility
   const baseUrl = import.meta.env.BASE_URL;
