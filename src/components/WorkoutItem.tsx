@@ -11,10 +11,14 @@ import {
   formatDateShort,
 } from '../types';
 import { fetchStravaData } from '../lib/strava';
+import { AnalysisModal } from './AnalysisModal';
 
 interface WorkoutItemProps {
   day: Day;
   weekStartDate: string;
+  weekNumber: number;
+  weekPhase: string;
+  weekFocus: string;
   dayIndex: number;
   allDays: Day[];
   progress: WorkoutProgress;
@@ -81,6 +85,9 @@ const getDefaultsFromPlannedType = (plannedType: string): { activityType: Activi
 export function WorkoutItem({
   day,
   weekStartDate,
+  weekNumber,
+  weekPhase,
+  weekFocus,
   dayIndex,
   allDays,
   progress,
@@ -89,6 +96,7 @@ export function WorkoutItem({
 }: WorkoutItemProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [showSwapOptions, setShowSwapOptions] = useState(false);
+  const [showAnalysis, setShowAnalysis] = useState(false);
 
   // Local state for form fields
   const [localData, setLocalData] = useState<WorkoutProgress>(progress);
@@ -389,20 +397,37 @@ export function WorkoutItem({
         </div>
       )}
 
-      {/* Strava link when collapsed */}
-      {!isExpanded && localData.stravaUrl && (
-        <div className="px-4 pb-3">
-          <a
-            href={localData.stravaUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 text-sm text-orange-600 hover:text-orange-700 font-medium"
-          >
-            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169" />
-            </svg>
-            Poglej na Stravi
-          </a>
+      {/* Strava link + Analysis button when collapsed */}
+      {!isExpanded && (localData.stravaUrl || (localData.distanceKm && localData.durationSeconds)) && (
+        <div className="px-4 pb-3 flex flex-wrap items-center gap-3">
+          {localData.stravaUrl && (
+            <a
+              href={localData.stravaUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-sm text-orange-600 hover:text-orange-700 font-medium"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169" />
+              </svg>
+              Poglej na Stravi
+            </a>
+          )}
+          {effectiveActivityType === 'run' && (localData.stravaUrl || localData.distanceKm) && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowAnalysis(true);
+              }}
+              className="inline-flex items-center gap-1.5 text-sm text-violet-600 hover:text-violet-700 font-medium bg-violet-50 hover:bg-violet-100 px-3 py-1 rounded-lg transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+              </svg>
+              Analiza
+            </button>
+          )}
         </div>
       )}
 
@@ -618,7 +643,7 @@ export function WorkoutItem({
             />
           </div>
 
-          {/* Save / Cancel buttons */}
+          {/* Save / Cancel / Analyze buttons */}
           <div className="flex gap-3 pt-2">
             <button
               onClick={handleSave}
@@ -637,9 +662,36 @@ export function WorkoutItem({
             >
               Prekliči
             </button>
+            <div className="flex-1" />
+            {effectiveActivityType === 'run' && (localData.stravaUrl || localData.distanceKm) && (
+              <button
+                onClick={() => setShowAnalysis(true)}
+                className="px-4 py-2 rounded-lg text-sm font-medium bg-gradient-to-r from-violet-500 to-indigo-600 text-white hover:from-violet-600 hover:to-indigo-700 transition-all flex items-center gap-2 shadow-sm"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                </svg>
+                AI Analiza
+              </button>
+            )}
           </div>
         </div>
       )}
+      {/* Analysis Modal */}
+      <AnalysisModal
+        isOpen={showAnalysis}
+        onClose={() => setShowAnalysis(false)}
+        stravaUrl={localData.stravaUrl}
+        date={date.toISOString().split('T')[0]}
+        workoutContext={{
+          plannedWorkout: day.workout,
+          runType: effectiveRunType,
+          comment: localData.comment,
+          weekNumber,
+          phase: weekPhase,
+          focus: weekFocus,
+        }}
+      />
     </div>
   );
 }

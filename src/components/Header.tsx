@@ -1,10 +1,13 @@
+import { useState } from 'react';
 import { trainingPlan } from '../data/trainingPlan';
+import { AthleteProfileModal } from './AthleteProfileModal';
 
 interface HeaderProps {
   syncing?: boolean;
 }
 
 export function Header({ syncing }: HeaderProps) {
+  const [showProfile, setShowProfile] = useState(false);
   // Race date: April 12, 2026 at 9:00 CET (Ljubljana)
   // Use local date components to avoid UTC vs CET offset issues
   const raceYear = 2026, raceMonth = 3, raceDay = 12; // month is 0-indexed
@@ -66,9 +69,23 @@ export function Header({ syncing }: HeaderProps) {
         </div>
       </div>
 
-      {syncing && (
-        <p className="text-xs text-gray-400 mt-3 text-center">Sinhroniziram...</p>
-      )}
+      {/* Profile button */}
+      <div className="mt-3 flex items-center justify-between">
+        <button
+          onClick={() => setShowProfile(true)}
+          className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-violet-700 bg-violet-50 hover:bg-violet-100 rounded-lg transition-colors"
+        >
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+          </svg>
+          Atletski profil
+        </button>
+        {syncing && (
+          <span className="text-xs text-gray-400">Sinhroniziram...</span>
+        )}
+      </div>
+
+      <AthleteProfileModal isOpen={showProfile} onClose={() => setShowProfile(false)} />
     </header>
   );
 }

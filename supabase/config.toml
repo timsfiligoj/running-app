@@ -399,3 +399,15 @@ enabled = true
 verify_jwt = false
 import_map = "./functions/strava-activities/deno.json"
 entrypoint = "./functions/strava-activities/index.ts"
+
+[functions.fetch-garmin]
+enabled = true
+verify_jwt = false
+import_map = "./functions/fetch-garmin/deno.json"
+entrypoint = "./functions/fetch-garmin/index.ts"
+
+[functions.analyze-run]
+enabled = true
+verify_jwt = false
+import_map = "./functions/analyze-run/deno.json"
+entrypoint = "./functions/analyze-run/index.ts"

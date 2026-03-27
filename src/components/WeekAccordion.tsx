@@ -242,6 +242,9 @@ export function WeekAccordion({
                 key={index}
                 day={day}
                 weekStartDate={week.startDate}
+                weekNumber={week.week}
+                weekPhase={week.phase}
+                weekFocus={week.focus}
                 dayIndex={index}
                 allDays={week.days}
                 progress={progress[`${week.week}-${index}`] || { completed: false, actualWorkout: '' }}
