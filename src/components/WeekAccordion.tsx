@@ -6,6 +6,8 @@ interface WeekAccordionProps {
   week: Week;
   progress: ProgressData;
   onUpdateWorkout: (weekNum: number, dayIndex: number, data: WorkoutProgress) => void;
+  weekFocusOverride?: string;
+  onUpdateWeekFocus?: (weekNum: number, focus: string) => void;
 }
 
 // Helper to derive activity type and run type from planned workout type
@@ -34,6 +36,8 @@ export function WeekAccordion({
   week,
   progress,
   onUpdateWorkout,
+  weekFocusOverride,
+  onUpdateWeekFocus,
 }: WeekAccordionProps) {
   // Handle swapping workouts between two days
   const handleSwapWorkouts = (fromIndex: number, toIndex: number) => {
@@ -231,11 +235,24 @@ export function WeekAccordion({
 
         {/* Phase and focus */}
         <div className="mt-1 text-sm text-blue-600 font-medium text-left">{week.phase}</div>
-        <div className="mt-0.5 text-xs text-gray-500 text-left">{week.focus}</div>
+        <div className="mt-0.5 text-xs text-gray-500 text-left">{weekFocusOverride || week.focus}</div>
       </button>
 
       {isOpen && (
         <div className="px-6 pb-6 border-t border-gray-100">
+          {/* Editable week focus */}
+          {onUpdateWeekFocus && (
+            <div className="mt-4 mb-3">
+              <label className="block text-xs font-medium text-gray-500 mb-1">Fokus tedna</label>
+              <input
+                type="text"
+                value={weekFocusOverride ?? week.focus}
+                onChange={(e) => onUpdateWeekFocus(week.week, e.target.value)}
+                placeholder={week.focus}
+                className="w-full px-3 py-1.5 border border-gray-200 rounded-lg text-sm text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+              />
+            </div>
+          )}
           <div className="space-y-3 mt-4">
             {week.days.map((day, index) => (
               <WorkoutItem
@@ -244,7 +261,7 @@ export function WeekAccordion({
                 weekStartDate={week.startDate}
                 weekNumber={week.week}
                 weekPhase={week.phase}
-                weekFocus={week.focus}
+                weekFocus={weekFocusOverride || week.focus}
                 dayIndex={index}
                 allDays={week.days}
                 progress={progress[`${week.week}-${index}`] || { completed: false, actualWorkout: '' }}

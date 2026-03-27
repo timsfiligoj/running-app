@@ -23,6 +23,7 @@ interface DbRow {
 
 function App() {
   const [progress, setProgress] = useState<ProgressData>({});
+  const [weekFocusOverrides, setWeekFocusOverrides] = useState<Record<number, string>>({});
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -70,10 +71,23 @@ function App() {
     }
   }, []);
 
+  // Load week focus overrides
+  const loadWeekFocusOverrides = useCallback(async () => {
+    const { data } = await supabase.from('week_overrides').select('*');
+    if (data) {
+      const overrides: Record<number, string> = {};
+      data.forEach((row: { week_num: number; focus: string }) => {
+        if (row.focus) overrides[row.week_num] = row.focus;
+      });
+      setWeekFocusOverrides(overrides);
+    }
+  }, []);
+
   // Initial load
   useEffect(() => {
     loadProgress();
-  }, [loadProgress]);
+    loadWeekFocusOverrides();
+  }, [loadProgress, loadWeekFocusOverrides]);
 
   // Real-time subscription
   useEffect(() => {
@@ -135,6 +149,16 @@ function App() {
     }));
 
     await saveProgress(key, data);
+  };
+
+  const handleUpdateWeekFocus = async (weekNum: number, focus: string) => {
+    setWeekFocusOverrides(prev => ({ ...prev, [weekNum]: focus }));
+
+    await supabase.from('week_overrides').upsert({
+      week_num: weekNum,
+      focus,
+      updated_at: new Date().toISOString(),
+    });
   };
 
   // Count only non-rest workouts
@@ -207,6 +231,8 @@ function App() {
               week={week}
               progress={progress}
               onUpdateWorkout={handleUpdateWorkout}
+              weekFocusOverride={weekFocusOverrides[week.week]}
+              onUpdateWeekFocus={handleUpdateWeekFocus}
             />
           ))}
         </div>

@@ -29,11 +29,16 @@ export interface AnalyzeRunResult {
  * Load cached analysis from Supabase
  */
 export async function getCachedAnalysis(workoutKey: string): Promise<AnalysisResult | null> {
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('workout_progress')
     .select('analysis_text, analysis_sources, analysis_at')
     .eq('id', workoutKey)
-    .single();
+    .maybeSingle();
+
+  if (error) {
+    console.error('getCachedAnalysis error:', error);
+    return null;
+  }
 
   if (data?.analysis_text) {
     return {
@@ -46,16 +51,24 @@ export async function getCachedAnalysis(workoutKey: string): Promise<AnalysisRes
 
 /**
  * Save analysis to cache in Supabase
+ * Uses upsert to handle both existing and non-existing rows
  */
 export async function cacheAnalysis(workoutKey: string, result: AnalysisResult): Promise<void> {
-  await supabase
+  const { error } = await supabase
     .from('workout_progress')
-    .update({
+    .upsert({
+      id: workoutKey,
       analysis_text: result.analysis,
       analysis_sources: result.sources,
       analysis_at: new Date().toISOString(),
-    })
-    .eq('id', workoutKey);
+    }, {
+      onConflict: 'id',
+      ignoreDuplicates: false,
+    });
+
+  if (error) {
+    console.error('cacheAnalysis error:', error);
+  }
 }
 
 /**
