@@ -149,8 +149,6 @@ interface AthleteProfile {
   max_hr?: number;
   weekly_volume?: string;
   training_philosophy?: string;
-  training_phase?: string;
-  week_in_block?: string;
   race_elevation?: string;
   weaknesses?: string;
   strengths?: string;
@@ -205,14 +203,6 @@ function buildAnalysisPrompt(
     if (athleteProfile.strengths) prompt += `\n- Prednosti: ${athleteProfile.strengths}`;
     if (athleteProfile.weaknesses) prompt += `\n- Šibkosti: ${athleteProfile.weaknesses}`;
     if (athleteProfile.training_philosophy) prompt += `\n- Trenažna filozofija: ${athleteProfile.training_philosophy}`;
-    const phaseLabels: Record<string, string> = {
-      'base': 'Gradnja baze',
-      'hm-specific': 'HM-specifično',
-      'taper': 'Taper',
-      'recovery': 'Regeneracija',
-    };
-    if (athleteProfile.training_phase) prompt += `\n- Trenutna faza: ${phaseLabels[athleteProfile.training_phase] || athleteProfile.training_phase}`;
-    if (athleteProfile.week_in_block) prompt += `\n- Teden v bloku: ${athleteProfile.week_in_block}`;
     if (athleteProfile.context) prompt += `\n- Dodaten kontekst: ${athleteProfile.context}`;
     prompt += `\n`;
   }

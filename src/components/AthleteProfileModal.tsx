@@ -13,18 +13,8 @@ export interface AthleteProfile {
   strengths: string;
   context: string;
   training_philosophy: string;
-  training_phase: string;
-  week_in_block: string;
   race_elevation: string;
 }
-
-const TRAINING_PHASES = [
-  { value: '', label: 'Izberi fazo...' },
-  { value: 'base', label: 'Gradnja baze' },
-  { value: 'hm-specific', label: 'HM-specifično' },
-  { value: 'taper', label: 'Taper' },
-  { value: 'recovery', label: 'Regeneracija' },
-];
 
 const emptyProfile: AthleteProfile = {
   race_name: '',
@@ -38,8 +28,6 @@ const emptyProfile: AthleteProfile = {
   strengths: '',
   context: '',
   training_philosophy: '',
-  training_phase: '',
-  week_in_block: '',
   race_elevation: '',
 };
 
@@ -79,8 +67,6 @@ export function AthleteProfileModal({ isOpen, onClose }: AthleteProfileModalProp
         strengths: data.strengths || '',
         context: data.context || '',
         training_philosophy: data.training_philosophy || '',
-        training_phase: data.training_phase || '',
-        week_in_block: data.week_in_block || '',
         race_elevation: data.race_elevation || '',
       });
     }
@@ -248,30 +234,6 @@ export function AthleteProfileModal({ isOpen, onClose }: AthleteProfileModalProp
                   rows={2}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Trenutna faza</label>
-                  <select
-                    value={profile.training_phase}
-                    onChange={(e) => setProfile(p => ({ ...p, training_phase: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
-                  >
-                    {TRAINING_PHASES.map(phase => (
-                      <option key={phase.value} value={phase.value}>{phase.label}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Teden v bloku</label>
-                  <input
-                    type="text"
-                    value={profile.week_in_block}
-                    onChange={(e) => setProfile(p => ({ ...p, week_in_block: e.target.value }))}
-                    placeholder="npr. 9/11"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Elevacija ciljne tekme</label>
