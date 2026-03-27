@@ -23,6 +23,7 @@ interface DbRow {
 
 function App() {
   const [progress, setProgress] = useState<ProgressData>({});
+  const [weekPhaseOverrides, setWeekPhaseOverrides] = useState<Record<number, string>>({});
   const [weekFocusOverrides, setWeekFocusOverrides] = useState<Record<number, string>>({});
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
@@ -71,23 +72,26 @@ function App() {
     }
   }, []);
 
-  // Load week focus overrides
-  const loadWeekFocusOverrides = useCallback(async () => {
+  // Load week overrides (phase + focus)
+  const loadWeekOverrides = useCallback(async () => {
     const { data } = await supabase.from('week_overrides').select('*');
     if (data) {
-      const overrides: Record<number, string> = {};
-      data.forEach((row: { week_num: number; focus: string }) => {
-        if (row.focus) overrides[row.week_num] = row.focus;
+      const phases: Record<number, string> = {};
+      const focuses: Record<number, string> = {};
+      data.forEach((row: { week_num: number; phase?: string; focus?: string }) => {
+        if (row.phase) phases[row.week_num] = row.phase;
+        if (row.focus) focuses[row.week_num] = row.focus;
       });
-      setWeekFocusOverrides(overrides);
+      setWeekPhaseOverrides(phases);
+      setWeekFocusOverrides(focuses);
     }
   }, []);
 
   // Initial load
   useEffect(() => {
     loadProgress();
-    loadWeekFocusOverrides();
-  }, [loadProgress, loadWeekFocusOverrides]);
+    loadWeekOverrides();
+  }, [loadProgress, loadWeekOverrides]);
 
   // Real-time subscription
   useEffect(() => {
@@ -151,9 +155,17 @@ function App() {
     await saveProgress(key, data);
   };
 
+  const handleUpdateWeekPhase = async (weekNum: number, phase: string) => {
+    setWeekPhaseOverrides(prev => ({ ...prev, [weekNum]: phase }));
+    await supabase.from('week_overrides').upsert({
+      week_num: weekNum,
+      phase,
+      updated_at: new Date().toISOString(),
+    });
+  };
+
   const handleUpdateWeekFocus = async (weekNum: number, focus: string) => {
     setWeekFocusOverrides(prev => ({ ...prev, [weekNum]: focus }));
-
     await supabase.from('week_overrides').upsert({
       week_num: weekNum,
       focus,
@@ -231,7 +243,9 @@ function App() {
               week={week}
               progress={progress}
               onUpdateWorkout={handleUpdateWorkout}
+              weekPhaseOverride={weekPhaseOverrides[week.week]}
               weekFocusOverride={weekFocusOverrides[week.week]}
+              onUpdateWeekPhase={handleUpdateWeekPhase}
               onUpdateWeekFocus={handleUpdateWeekFocus}
             />
           ))}

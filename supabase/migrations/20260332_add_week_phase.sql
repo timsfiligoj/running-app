@@ -1,0 +1,1 @@
+ALTER TABLE week_overrides ADD COLUMN IF NOT EXISTS phase TEXT;

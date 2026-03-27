@@ -6,7 +6,9 @@ interface WeekAccordionProps {
   week: Week;
   progress: ProgressData;
   onUpdateWorkout: (weekNum: number, dayIndex: number, data: WorkoutProgress) => void;
+  weekPhaseOverride?: string;
   weekFocusOverride?: string;
+  onUpdateWeekPhase?: (weekNum: number, phase: string) => void;
   onUpdateWeekFocus?: (weekNum: number, focus: string) => void;
 }
 
@@ -36,9 +38,16 @@ export function WeekAccordion({
   week,
   progress,
   onUpdateWorkout,
+  weekPhaseOverride,
   weekFocusOverride,
+  onUpdateWeekPhase,
   onUpdateWeekFocus,
 }: WeekAccordionProps) {
+  const [editingPhase, setEditingPhase] = useState(false);
+  const [editingFocus, setEditingFocus] = useState(false);
+
+  const effectivePhase = weekPhaseOverride || week.phase;
+  const effectiveFocus = weekFocusOverride || week.focus;
   // Handle swapping workouts between two days
   const handleSwapWorkouts = (fromIndex: number, toIndex: number) => {
     const fromKey = `${week.week}-${fromIndex}`;
@@ -233,26 +242,65 @@ export function WeekAccordion({
           </div>
         )}
 
-        {/* Phase and focus */}
-        <div className="mt-1 text-sm text-blue-600 font-medium text-left">{week.phase}</div>
-        <div className="mt-0.5 text-xs text-gray-500 text-left">{weekFocusOverride || week.focus}</div>
+        {/* Phase - inline editable */}
+        <div className="mt-1 text-left">
+          {editingPhase && isOpen ? (
+            <input
+              type="text"
+              value={effectivePhase}
+              onChange={(e) => onUpdateWeekPhase?.(week.week, e.target.value)}
+              onBlur={() => setEditingPhase(false)}
+              onKeyDown={(e) => { if (e.key === 'Enter') setEditingPhase(false); }}
+              onClick={(e) => e.stopPropagation()}
+              autoFocus
+              className="w-full text-sm text-blue-600 font-medium bg-blue-50 border border-blue-200 rounded px-1.5 py-0.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+            />
+          ) : (
+            <div
+              className="text-sm text-blue-600 font-medium cursor-text hover:bg-blue-50 rounded px-1.5 py-0.5 -mx-1.5 transition-colors"
+              onClick={(e) => {
+                if (isOpen) {
+                  e.stopPropagation();
+                  setEditingPhase(true);
+                }
+              }}
+            >
+              {effectivePhase}
+            </div>
+          )}
+        </div>
+
+        {/* Focus - inline editable */}
+        <div className="mt-0.5 text-left">
+          {editingFocus && isOpen ? (
+            <input
+              type="text"
+              value={effectiveFocus}
+              onChange={(e) => onUpdateWeekFocus?.(week.week, e.target.value)}
+              onBlur={() => setEditingFocus(false)}
+              onKeyDown={(e) => { if (e.key === 'Enter') setEditingFocus(false); }}
+              onClick={(e) => e.stopPropagation()}
+              autoFocus
+              className="w-full text-xs text-gray-500 bg-gray-50 border border-gray-200 rounded px-1.5 py-0.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+            />
+          ) : (
+            <div
+              className="text-xs text-gray-500 cursor-text hover:bg-gray-50 rounded px-1.5 py-0.5 -mx-1.5 transition-colors"
+              onClick={(e) => {
+                if (isOpen) {
+                  e.stopPropagation();
+                  setEditingFocus(true);
+                }
+              }}
+            >
+              {effectiveFocus}
+            </div>
+          )}
+        </div>
       </button>
 
       {isOpen && (
         <div className="px-6 pb-6 border-t border-gray-100">
-          {/* Editable week focus */}
-          {onUpdateWeekFocus && (
-            <div className="mt-4 mb-3">
-              <label className="block text-xs font-medium text-gray-500 mb-1">Fokus tedna</label>
-              <input
-                type="text"
-                value={weekFocusOverride ?? week.focus}
-                onChange={(e) => onUpdateWeekFocus(week.week, e.target.value)}
-                placeholder={week.focus}
-                className="w-full px-3 py-1.5 border border-gray-200 rounded-lg text-sm text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
-              />
-            </div>
-          )}
           <div className="space-y-3 mt-4">
             {week.days.map((day, index) => (
               <WorkoutItem
@@ -260,8 +308,8 @@ export function WeekAccordion({
                 day={day}
                 weekStartDate={week.startDate}
                 weekNumber={week.week}
-                weekPhase={week.phase}
-                weekFocus={weekFocusOverride || week.focus}
+                weekPhase={effectivePhase}
+                weekFocus={effectiveFocus}
                 dayIndex={index}
                 allDays={week.days}
                 progress={progress[`${week.week}-${index}`] || { completed: false, actualWorkout: '' }}

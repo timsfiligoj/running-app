@@ -1,6 +1,7 @@
--- Store week focus overrides
+-- Store week focus and phase overrides
 CREATE TABLE IF NOT EXISTS week_overrides (
   week_num INTEGER PRIMARY KEY,
+  phase TEXT,
   focus TEXT,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
