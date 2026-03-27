@@ -301,32 +301,40 @@ function buildAnalysisPrompt(
     }
   }
 
+  // Determine run type for adaptive analysis depth
+  const runType = (workoutContext.runType as string || '').toLowerCase();
+  const isEasyRun = ['easy', 'long'].includes(runType);
+  const isIntenseRun = ['tempo', 'intervals', 'hills', 'test', 'race'].includes(runType);
+
   prompt += `
 ## Navodila za analizo
-Podaj analizo v naslednjem formatu (uporabi markdown):
+
+PRAVILA:
+- Piši KRATKO in JEDRNATO. Celotna analiza naj bo 150-250 besed, ne več.
+- NE komentiraj načrtovanega treninga ali "odklonov od plana". Tekač sam upravlja svoj plan in ga prilagaja. Zaupaj, da je današnji tek bil pravilna odločitev.
+- Bodi OBJEKTIVEN: analiziraj podatke tega teka in oceni, kako kažejo na pripravljenost za cilj.
+- Piši v slovenščini, strokovno a prijazno.
+
+STRUKTURA ODGOVORA (uporabi markdown ### za naslove):
 
 ### Povzetek
-Kratek povzetek teka v 2-3 stavkih.
+2-3 stavki. Kaj pove ta tek o trenutni formi? Brez ocenjevanja plana.
 
-### Tempo & razdalja
-Analiza tempa, razdalje glede na načrtovani trening. Ali je bil tempo ustrezen za tip teka?
+${isIntenseRun ? `### Tempo & HR analiza
+Podrobna analiza tempa po odsekih in HR odziva. Primerjaj s ciljnim tempom za tekmo. Ali HR kaže na napredek ali stagnacijo?` : `### Ključni podatki
+Kratek pregled: tempo, HR, kadenca. Za easy tek je bistveno, ali je bil HR dovolj nizek (aerobna cona).`}
 
-### Srčni utrip
-Analiza HR podatkov - cone, povprečni/max HR. Ali je bila intenzivnost ustrezna?
+${isIntenseRun ? `### Tekaška tehnika
+Kadenca, ground contact time, vertical oscillation - samo če so podatki na voljo. Kratek komentar.` : ''}
 
-### Tekaška tehnika
-Če so na voljo Garmin podatki (kadenca, ground contact time, vertical oscillation) - analiza tekaške forme.
+### Predikcija cilja
+Na podlagi TEGA teka in razpoložljivih podatkov oceni verjetnost dosega cilja. Odgovori v formatu:
+CONFIDENCE: [število 0-100]%
+Nato 1-2 stavka zakaj.
 
-### Training Effect
-Če so na voljo - analiza aerobnega/anaerobnega training effecta in training loada.
-
-### Napredek proti cilju
-Oceni, kako ta trening prispeva k doseganju ciljnega časa/tempa. Ali je tekač na pravi poti?
-
-### Priporočila
-2-3 konkretna priporočila za naprej glede na podatke in cilj.
-
-Bodi konkreten, uporabi številke iz podatkov. Piši v slovenščini, strokovno a razumljivo. Vsako analizo poveži s tekačevim ciljem iz atletskega profila.`;
+### Priporočilo
+ENO konkretno, izvedljivo priporočilo za naslednje tedne.
+`;
 
   return prompt;
 }

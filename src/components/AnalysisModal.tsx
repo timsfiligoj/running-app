@@ -9,6 +9,31 @@ interface AnalysisModalProps {
   workoutContext: WorkoutContext;
 }
 
+// Extract CONFIDENCE: XX% from analysis text
+function extractConfidence(text: string): number | null {
+  const match = text.match(/CONFIDENCE:\s*(\d+)\s*%/i);
+  return match ? parseInt(match[1]) : null;
+}
+
+function getConfidenceColor(confidence: number): string {
+  if (confidence >= 75) return 'text-green-600';
+  if (confidence >= 50) return 'text-yellow-600';
+  return 'text-red-500';
+}
+
+function getConfidenceBarColor(confidence: number): string {
+  if (confidence >= 75) return 'bg-green-500';
+  if (confidence >= 50) return 'bg-yellow-500';
+  return 'bg-red-500';
+}
+
+function getConfidenceLabel(confidence: number): string {
+  if (confidence >= 85) return 'Odlicno na poti';
+  if (confidence >= 70) return 'Dobra smer';
+  if (confidence >= 50) return 'Potrebno delo';
+  return 'Izziv';
+}
+
 export function AnalysisModal({ isOpen, onClose, stravaUrl, date, workoutContext }: AnalysisModalProps) {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<AnalysisResult | null>(null);
@@ -21,7 +46,6 @@ export function AnalysisModal({ isOpen, onClose, stravaUrl, date, workoutContext
     }
   }, [isOpen]);
 
-  // Close on Escape
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
@@ -30,7 +54,6 @@ export function AnalysisModal({ isOpen, onClose, stravaUrl, date, workoutContext
     return () => document.removeEventListener('keydown', handleEsc);
   }, [isOpen, onClose]);
 
-  // Prevent body scroll when modal is open
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
@@ -43,9 +66,7 @@ export function AnalysisModal({ isOpen, onClose, stravaUrl, date, workoutContext
   const runAnalysis = async () => {
     setLoading(true);
     setError(null);
-
     const { data, error: err } = await analyzeRun(stravaUrl, date, workoutContext);
-
     if (err) {
       setError(err);
     } else {
@@ -63,23 +84,23 @@ export function AnalysisModal({ isOpen, onClose, stravaUrl, date, workoutContext
 
   if (!isOpen) return null;
 
+  const confidence = result ? extractConfidence(result.analysis) : null;
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
       onClick={(e) => { if (e.target === e.currentTarget) handleClose(); }}
     >
-      {/* Backdrop */}
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
 
-      {/* Modal */}
       <div
         ref={modalRef}
         className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col overflow-hidden"
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-violet-50 to-indigo-50">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center shadow-md">
               <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
               </svg>
@@ -89,7 +110,7 @@ export function AnalysisModal({ isOpen, onClose, stravaUrl, date, workoutContext
               {result?.sources && (
                 <div className="flex gap-2 mt-0.5">
                   {result.sources.strava && (
-                    <span className="inline-flex items-center gap-1 text-xs text-orange-600 font-medium">
+                    <span className="inline-flex items-center gap-1 text-xs text-orange-600 font-medium bg-orange-50 px-1.5 py-0.5 rounded">
                       <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
                         <path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169" />
                       </svg>
@@ -97,7 +118,7 @@ export function AnalysisModal({ isOpen, onClose, stravaUrl, date, workoutContext
                     </span>
                   )}
                   {result.sources.garmin && (
-                    <span className="inline-flex items-center gap-1 text-xs text-green-600 font-medium">
+                    <span className="inline-flex items-center gap-1 text-xs text-green-600 font-medium bg-green-50 px-1.5 py-0.5 rounded">
                       <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
                         <circle cx="12" cy="12" r="10" />
                       </svg>
@@ -108,18 +129,36 @@ export function AnalysisModal({ isOpen, onClose, stravaUrl, date, workoutContext
               )}
             </div>
           </div>
-          <button
-            onClick={handleClose}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-          >
+          <button onClick={handleClose} className="p-2 hover:bg-white/80 rounded-lg transition-colors">
             <svg className="w-5 h-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         </div>
 
+        {/* Confidence bar - shown at top when available */}
+        {confidence !== null && !loading && (
+          <div className="px-6 py-3 bg-gray-50 border-b border-gray-100">
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Predikcija cilja</span>
+              <span className={`text-lg font-bold ${getConfidenceColor(confidence)}`}>
+                {confidence}%
+              </span>
+            </div>
+            <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden">
+              <div
+                className={`h-full rounded-full transition-all duration-1000 ease-out ${getConfidenceBarColor(confidence)}`}
+                style={{ width: `${confidence}%` }}
+              />
+            </div>
+            <p className={`text-xs mt-1 font-medium ${getConfidenceColor(confidence)}`}>
+              {getConfidenceLabel(confidence)}
+            </p>
+          </div>
+        )}
+
         {/* Content */}
-        <div className="flex-1 overflow-y-auto px-6 py-4">
+        <div className="flex-1 overflow-y-auto px-6 py-5">
           {loading && (
             <div className="flex flex-col items-center justify-center py-16">
               <div className="relative">
@@ -154,9 +193,7 @@ export function AnalysisModal({ isOpen, onClose, stravaUrl, date, workoutContext
           )}
 
           {result && !loading && (
-            <div className="prose prose-sm max-w-none prose-headings:text-gray-900 prose-h3:text-base prose-h3:font-bold prose-h3:mt-6 prose-h3:mb-2 prose-p:text-gray-700 prose-li:text-gray-700 prose-strong:text-gray-900">
-              <MarkdownRenderer content={result.analysis} />
-            </div>
+            <MarkdownRenderer content={result.analysis} />
           )}
         </div>
 
@@ -176,9 +213,13 @@ export function AnalysisModal({ isOpen, onClose, stravaUrl, date, workoutContext
   );
 }
 
-// Simple markdown renderer (handles headers, bold, lists, paragraphs)
+// ─── Markdown Renderer ─────────────────────────────────────────────────────────
+
 function MarkdownRenderer({ content }: { content: string }) {
-  const lines = content.split('\n');
+  // Remove the CONFIDENCE: XX% line from rendered content (it's shown in the bar)
+  const cleanedContent = content.replace(/CONFIDENCE:\s*\d+\s*%/gi, '').trim();
+
+  const lines = cleanedContent.split('\n');
   const elements: React.ReactElement[] = [];
   let listItems: string[] = [];
   let key = 0;
@@ -186,9 +227,12 @@ function MarkdownRenderer({ content }: { content: string }) {
   const flushList = () => {
     if (listItems.length > 0) {
       elements.push(
-        <ul key={key++} className="list-disc pl-5 space-y-1 my-2">
+        <ul key={key++} className="space-y-1.5 my-3">
           {listItems.map((item, i) => (
-            <li key={i} dangerouslySetInnerHTML={{ __html: inlineFormat(item) }} />
+            <li key={i} className="flex gap-2 text-sm text-gray-700 leading-relaxed">
+              <span className="text-violet-400 mt-1 flex-shrink-0">&#8226;</span>
+              <span dangerouslySetInnerHTML={{ __html: inlineFormat(item) }} />
+            </li>
           ))}
         </ul>
       );
@@ -202,12 +246,19 @@ function MarkdownRenderer({ content }: { content: string }) {
     if (trimmed.startsWith('### ')) {
       flushList();
       elements.push(
-        <h3 key={key++} dangerouslySetInnerHTML={{ __html: inlineFormat(trimmed.slice(4)) }} />
+        <div key={key++} className="mt-5 mb-2 first:mt-0">
+          <h3
+            className="text-sm font-bold text-gray-900 uppercase tracking-wide border-b border-gray-100 pb-1.5"
+            dangerouslySetInnerHTML={{ __html: inlineFormat(trimmed.slice(4)) }}
+          />
+        </div>
       );
     } else if (trimmed.startsWith('## ')) {
       flushList();
       elements.push(
-        <h2 key={key++} className="text-lg font-bold mt-6 mb-2" dangerouslySetInnerHTML={{ __html: inlineFormat(trimmed.slice(3)) }} />
+        <h2 key={key++} className="text-base font-bold text-gray-900 mt-6 mb-2 first:mt-0"
+          dangerouslySetInnerHTML={{ __html: inlineFormat(trimmed.slice(3)) }}
+        />
       );
     } else if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
       listItems.push(trimmed.slice(2));
@@ -218,18 +269,20 @@ function MarkdownRenderer({ content }: { content: string }) {
     } else {
       flushList();
       elements.push(
-        <p key={key++} dangerouslySetInnerHTML={{ __html: inlineFormat(trimmed) }} />
+        <p key={key++} className="text-sm text-gray-700 leading-relaxed my-2"
+          dangerouslySetInnerHTML={{ __html: inlineFormat(trimmed) }}
+        />
       );
     }
   }
   flushList();
 
-  return <>{elements}</>;
+  return <div className="space-y-0">{elements}</div>;
 }
 
 function inlineFormat(text: string): string {
   return text
-    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-    .replace(/\*(.+?)\*/g, '<em>$1</em>')
-    .replace(/`(.+?)`/g, '<code class="bg-gray-100 px-1 rounded text-sm">$1</code>');
+    .replace(/\*\*(.+?)\*\*/g, '<strong class="font-semibold text-gray-900">$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em class="text-gray-600">$1</em>')
+    .replace(/`(.+?)`/g, '<code class="bg-violet-50 text-violet-700 px-1.5 py-0.5 rounded text-xs font-mono">$1</code>');
 }
