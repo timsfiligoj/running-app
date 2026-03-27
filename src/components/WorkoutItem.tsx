@@ -683,6 +683,7 @@ export function WorkoutItem({
         onClose={() => setShowAnalysis(false)}
         stravaUrl={localData.stravaUrl}
         date={date.toISOString().split('T')[0]}
+        workoutKey={`${weekNumber}-${dayIndex}`}
         workoutContext={{
           plannedWorkout: day.workout,
           runType: effectiveRunType,

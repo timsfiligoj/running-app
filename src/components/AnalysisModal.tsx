@@ -7,6 +7,7 @@ interface AnalysisModalProps {
   stravaUrl?: string;
   date?: string;
   workoutContext: WorkoutContext;
+  workoutKey?: string;
 }
 
 // Extract CONFIDENCE: XX% from analysis text
@@ -34,15 +35,16 @@ function getConfidenceLabel(confidence: number): string {
   return 'Izziv';
 }
 
-export function AnalysisModal({ isOpen, onClose, stravaUrl, date, workoutContext }: AnalysisModalProps) {
+export function AnalysisModal({ isOpen, onClose, stravaUrl, date, workoutContext, workoutKey }: AnalysisModalProps) {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isCached, setIsCached] = useState(false);
   const modalRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (isOpen && !result && !loading) {
-      runAnalysis();
+      runAnalysis(false);
     }
   }, [isOpen]);
 
@@ -63,14 +65,16 @@ export function AnalysisModal({ isOpen, onClose, stravaUrl, date, workoutContext
     return () => { document.body.style.overflow = ''; };
   }, [isOpen]);
 
-  const runAnalysis = async () => {
+  const runAnalysis = async (forceRefresh: boolean) => {
     setLoading(true);
     setError(null);
-    const { data, error: err } = await analyzeRun(stravaUrl, date, workoutContext);
+    setIsCached(false);
+    const { data, error: err, cached } = await analyzeRun(stravaUrl, date, workoutContext, workoutKey, forceRefresh);
     if (err) {
       setError(err);
     } else {
       setResult(data);
+      setIsCached(cached);
     }
     setLoading(false);
   };
@@ -79,6 +83,7 @@ export function AnalysisModal({ isOpen, onClose, stravaUrl, date, workoutContext
     setResult(null);
     setError(null);
     setLoading(false);
+    setIsCached(false);
     onClose();
   };
 
@@ -184,7 +189,7 @@ export function AnalysisModal({ isOpen, onClose, stravaUrl, date, workoutContext
               <p className="text-red-600 font-medium mb-2">Napaka pri analizi</p>
               <p className="text-sm text-gray-500 mb-4">{error}</p>
               <button
-                onClick={runAnalysis}
+                onClick={() => { runAnalysis(false); }}
                 className="px-4 py-2 bg-violet-600 text-white rounded-lg text-sm font-medium hover:bg-violet-700 transition-colors"
               >
                 Poskusi znova
@@ -199,7 +204,26 @@ export function AnalysisModal({ isOpen, onClose, stravaUrl, date, workoutContext
 
         {/* Footer */}
         {result && !loading && (
-          <div className="px-6 py-3 border-t border-gray-100 bg-gray-50 flex justify-end">
+          <div className="px-6 py-3 border-t border-gray-100 bg-gray-50 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              {isCached && (
+                <span className="text-xs text-gray-400 flex items-center gap-1">
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                  Shranjena analiza
+                </span>
+              )}
+              <button
+                onClick={() => { runAnalysis(true); }}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-violet-600 hover:text-violet-700 hover:bg-violet-50 rounded-lg transition-colors"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                Nova analiza
+              </button>
+            </div>
             <button
               onClick={handleClose}
               className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-300 transition-colors"
