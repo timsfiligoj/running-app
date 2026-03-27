@@ -148,6 +148,10 @@ interface AthleteProfile {
   experience?: string;
   max_hr?: number;
   weekly_volume?: string;
+  training_philosophy?: string;
+  training_phase?: string;
+  week_in_block?: string;
+  race_elevation?: string;
   weaknesses?: string;
   strengths?: string;
   context?: string;
@@ -194,13 +198,23 @@ function buildAnalysisPrompt(
     if (athleteProfile.race_date) prompt += `\n- Datum tekme: ${athleteProfile.race_date}`;
     if (athleteProfile.target_time) prompt += `\n- Ciljni čas: ${athleteProfile.target_time}`;
     if (athleteProfile.target_pace) prompt += `\n- Ciljni tempo: ${athleteProfile.target_pace}`;
+    if (athleteProfile.race_elevation) prompt += `\n- Elevacija tekme: ${athleteProfile.race_elevation}`;
     if (athleteProfile.experience) prompt += `\n- Izkušnje: ${athleteProfile.experience}`;
     if (athleteProfile.max_hr) prompt += `\n- Max HR: ${athleteProfile.max_hr} bpm`;
     if (athleteProfile.weekly_volume) prompt += `\n- Tedenski volumen: ${athleteProfile.weekly_volume}`;
     if (athleteProfile.strengths) prompt += `\n- Prednosti: ${athleteProfile.strengths}`;
     if (athleteProfile.weaknesses) prompt += `\n- Šibkosti: ${athleteProfile.weaknesses}`;
+    if (athleteProfile.training_philosophy) prompt += `\n- Trenažna filozofija: ${athleteProfile.training_philosophy}`;
+    const phaseLabels: Record<string, string> = {
+      'base': 'Gradnja baze',
+      'hm-specific': 'HM-specifično',
+      'taper': 'Taper',
+      'recovery': 'Regeneracija',
+    };
+    if (athleteProfile.training_phase) prompt += `\n- Trenutna faza: ${phaseLabels[athleteProfile.training_phase] || athleteProfile.training_phase}`;
+    if (athleteProfile.week_in_block) prompt += `\n- Teden v bloku: ${athleteProfile.week_in_block}`;
     if (athleteProfile.context) prompt += `\n- Dodaten kontekst: ${athleteProfile.context}`;
-    prompt += `\n\n**POMEMBNO: Vso analizo izvedi skozi prizmo zgornjega cilja. Vsak podatek oceni glede na to, ali tekač napreduje proti ciljnemu času/tempu.**\n`;
+    prompt += `\n`;
   }
 
   prompt += `
@@ -309,31 +323,41 @@ function buildAnalysisPrompt(
   prompt += `
 ## Navodila za analizo
 
-PRAVILA:
-- Piši KRATKO in JEDRNATO. Celotna analiza naj bo 150-250 besed, ne več.
-- NE komentiraj načrtovanega treninga ali "odklonov od plana". Tekač sam upravlja svoj plan in ga prilagaja. Zaupaj, da je današnji tek bil pravilna odločitev.
-- Bodi OBJEKTIVEN: analiziraj podatke tega teka in oceni, kako kažejo na pripravljenost za cilj.
+STROGA PRAVILA:
+- Piši KRATKO. Celotna analiza 150-250 besed.
+- NE komentiraj "odklonov od plana". Tekač sam upravlja plan. Zaupaj njegovi odločitvi.
+- Priporočila morajo biti usklajena z atletovo trenažno filozofijo. Če je polariziran trening, NE priporočaj več Z3/tempo tekov za easy dneve.
+- Upoštevaj fazo treninga: v taperu priporočaj konzervativnost, ne dodajanja volumna. V gradnji baze ne zahtevaj race-pace tekov.
 - Piši v slovenščini, strokovno a prijazno.
 
-STRUKTURA ODGOVORA (uporabi markdown ### za naslove):
+HR DRIFT ANALIZA (ključni indikator forme):
+- Če so na voljo HR spliti po kilometrih, IZRAČUNAJ HR drift: (HR zadnji 2km - HR prvi 2km).
+- Drift <5 bpm = odlična aerobna baza. 5-10 bpm = normalen. >10 bpm = potrebno delo na aerobni vzdržljivosti.
+- Drift pri race pace je najpomembnejši indikator pripravljenosti za tekmo.
+
+STRUKTURA ODGOVORA (markdown ### za naslove):
 
 ### Povzetek
-2-3 stavki. Kaj pove ta tek o trenutni formi? Brez ocenjevanja plana.
+2-3 stavki. Kaj pove ta tek o trenutni formi?
 
-${isIntenseRun ? `### Tempo & HR analiza
-Podrobna analiza tempa po odsekih in HR odziva. Primerjaj s ciljnim tempom za tekmo. Ali HR kaže na napredek ali stagnacijo?` : `### Ključni podatki
-Kratek pregled: tempo, HR, kadenca. Za easy tek je bistveno, ali je bil HR dovolj nizek (aerobna cona).`}
-
-${isIntenseRun ? `### Tekaška tehnika
-Kadenca, ground contact time, vertical oscillation - samo če so podatki na voljo. Kratek komentar.` : ''}
+${isIntenseRun ? `### Tempo & HR
+Analiza tempa po odsekih in HR odziva. HR drift izračun. Primerjaj s ciljnim tempom.` : `### Ključni podatki
+Kratek pregled: tempo, HR (ali je bil v aerobni coni?), kadenca. HR drift če so podatki.`}
+${isIntenseRun ? `
+### Tehnika
+Kadenca, ground contact time, vertical oscillation - samo če podatki obstajajo. 1-2 stavka.` : ''}
 
 ### Predikcija cilja
-Na podlagi TEGA teka in razpoložljivih podatkov oceni verjetnost dosega cilja. Odgovori v formatu:
+Oceni verjetnost dosega cilja. Uporabi formulo:
+- Za tempo/test teke: aktualni pace × 0.97 faktor = predviden HM pace
+- HR drift korekcija: drift <10bpm = +5%, drift >15bpm = -10%
+- Elevacija korekcija: primerjaj elevacijo tega teka z elevacijo ciljne tekme
+Odgovori v formatu:
 CONFIDENCE: [število 0-100]%
-Nato 1-2 stavka zakaj.
+1-2 stavka zakaj.
 
 ### Priporočilo
-ENO konkretno, izvedljivo priporočilo za naslednje tedne.
+ENO konkretno priporočilo, usklajeno s trenažno filozofijo in fazo.
 `;
 
   return prompt;

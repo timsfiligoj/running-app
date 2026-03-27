@@ -12,7 +12,19 @@ export interface AthleteProfile {
   weaknesses: string;
   strengths: string;
   context: string;
+  training_philosophy: string;
+  training_phase: string;
+  week_in_block: string;
+  race_elevation: string;
 }
+
+const TRAINING_PHASES = [
+  { value: '', label: 'Izberi fazo...' },
+  { value: 'base', label: 'Gradnja baze' },
+  { value: 'hm-specific', label: 'HM-specifično' },
+  { value: 'taper', label: 'Taper' },
+  { value: 'recovery', label: 'Regeneracija' },
+];
 
 const emptyProfile: AthleteProfile = {
   race_name: '',
@@ -25,6 +37,10 @@ const emptyProfile: AthleteProfile = {
   weaknesses: '',
   strengths: '',
   context: '',
+  training_philosophy: '',
+  training_phase: '',
+  week_in_block: '',
+  race_elevation: '',
 };
 
 interface AthleteProfileModalProps {
@@ -62,6 +78,10 @@ export function AthleteProfileModal({ isOpen, onClose }: AthleteProfileModalProp
         weaknesses: data.weaknesses || '',
         strengths: data.strengths || '',
         context: data.context || '',
+        training_philosophy: data.training_philosophy || '',
+        training_phase: data.training_phase || '',
+        week_in_block: data.week_in_block || '',
+        race_elevation: data.race_elevation || '',
       });
     }
     setLoading(false);
@@ -211,6 +231,55 @@ export function AthleteProfileModal({ isOpen, onClose }: AthleteProfileModalProp
                   value={profile.weekly_volume}
                   onChange={(e) => setProfile(p => ({ ...p, weekly_volume: e.target.value }))}
                   placeholder="npr. 35-50 km/teden"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+
+              {/* Training philosophy & phase */}
+              <div className="pt-2 border-t border-gray-100">
+                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Trenažni pristop</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Trenažna filozofija</label>
+                <textarea
+                  value={profile.training_philosophy}
+                  onChange={(e) => setProfile(p => ({ ...p, training_philosophy: e.target.value }))}
+                  placeholder="npr. Polariziran trening, 80% easy ≤140bpm, 20% intervali/tempo. Brez cone 3."
+                  rows={2}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Trenutna faza</label>
+                  <select
+                    value={profile.training_phase}
+                    onChange={(e) => setProfile(p => ({ ...p, training_phase: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                  >
+                    {TRAINING_PHASES.map(phase => (
+                      <option key={phase.value} value={phase.value}>{phase.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Teden v bloku</label>
+                  <input
+                    type="text"
+                    value={profile.week_in_block}
+                    onChange={(e) => setProfile(p => ({ ...p, week_in_block: e.target.value }))}
+                    placeholder="npr. 9/11"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Elevacija ciljne tekme</label>
+                <input
+                  type="text"
+                  value={profile.race_elevation}
+                  onChange={(e) => setProfile(p => ({ ...p, race_elevation: e.target.value }))}
+                  placeholder="npr. ravninska, 50m skupnega vzpona"
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
