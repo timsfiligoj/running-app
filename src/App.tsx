@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { trainingPlan } from './data/trainingPlan';
+import { trainingPlans } from './data/trainingPlans';
 import { ProgressData, WorkoutProgress } from './types';
 import { Header } from './components/Header';
 import { ProgressBar } from './components/ProgressBar';
@@ -8,6 +8,7 @@ import { supabase } from './lib/supabase';
 
 interface DbRow {
   id: string;
+  plan_id?: string;
   completed: boolean;
   skipped?: boolean;
   actual_workout: string;
@@ -21,19 +22,37 @@ interface DbRow {
   strava_url?: string;
 }
 
+const ACTIVE_PLAN_KEY = 'activePlanId';
+const DEFAULT_PLAN_ID = trainingPlans[0].id;
+
 function App() {
-  const [progress, setProgress] = useState<ProgressData>({});
-  const [weekPhaseOverrides, setWeekPhaseOverrides] = useState<Record<number, string>>({});
-  const [weekFocusOverrides, setWeekFocusOverrides] = useState<Record<number, string>>({});
+  const [activePlanId, setActivePlanId] = useState<string>(() => {
+    const saved = typeof window !== 'undefined' ? window.localStorage.getItem(ACTIVE_PLAN_KEY) : null;
+    if (saved && trainingPlans.some(p => p.id === saved)) return saved;
+    return DEFAULT_PLAN_ID;
+  });
+  const [progressByPlan, setProgressByPlan] = useState<Record<string, ProgressData>>({});
+  const [phasesByPlan, setPhasesByPlan] = useState<Record<string, Record<number, string>>>({});
+  const [focusByPlan, setFocusByPlan] = useState<Record<string, Record<number, string>>>({});
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Convert DB row to WorkoutProgress
+  const activePlan = trainingPlans.find(p => p.id === activePlanId) ?? trainingPlans[0];
+  const progress = progressByPlan[activePlanId] ?? {};
+  const weekPhaseOverrides = phasesByPlan[activePlanId] ?? {};
+  const weekFocusOverrides = focusByPlan[activePlanId] ?? {};
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(ACTIVE_PLAN_KEY, activePlanId);
+    }
+  }, [activePlanId]);
+
   const dbRowToProgress = (row: DbRow): WorkoutProgress => ({
     completed: row.completed,
     skipped: row.skipped,
-    actualWorkout: row.actual_workout ?? undefined, // null = use default, '' = explicitly cleared
+    actualWorkout: row.actual_workout ?? undefined,
     activityType: row.activity_type as WorkoutProgress['activityType'],
     runType: row.run_type as WorkoutProgress['runType'],
     distanceKm: row.distance_km,
@@ -44,7 +63,6 @@ function App() {
     stravaUrl: row.strava_url,
   });
 
-  // Load data from Supabase
   const loadProgress = useCallback(async () => {
     try {
       const { data, error: dbError } = await supabase
@@ -58,11 +76,13 @@ function App() {
         return;
       }
 
-      const progressData: ProgressData = {};
+      const grouped: Record<string, ProgressData> = {};
       data?.forEach((row: DbRow) => {
-        progressData[row.id] = dbRowToProgress(row);
+        const planId = row.plan_id || 'istrski-2026';
+        if (!grouped[planId]) grouped[planId] = {};
+        grouped[planId][row.id] = dbRowToProgress(row);
       });
-      setProgress(progressData);
+      setProgressByPlan(grouped);
       setError(null);
     } catch (err) {
       console.error('Unexpected error:', err);
@@ -72,28 +92,28 @@ function App() {
     }
   }, []);
 
-  // Load week overrides (phase + focus)
   const loadWeekOverrides = useCallback(async () => {
     const { data } = await supabase.from('week_overrides').select('*');
     if (data) {
-      const phases: Record<number, string> = {};
-      const focuses: Record<number, string> = {};
-      data.forEach((row: { week_num: number; phase?: string; focus?: string }) => {
-        if (row.phase) phases[row.week_num] = row.phase;
-        if (row.focus) focuses[row.week_num] = row.focus;
+      const phases: Record<string, Record<number, string>> = {};
+      const focuses: Record<string, Record<number, string>> = {};
+      data.forEach((row: { plan_id?: string; week_num: number; phase?: string; focus?: string }) => {
+        const planId = row.plan_id || 'istrski-2026';
+        if (!phases[planId]) phases[planId] = {};
+        if (!focuses[planId]) focuses[planId] = {};
+        if (row.phase) phases[planId][row.week_num] = row.phase;
+        if (row.focus) focuses[planId][row.week_num] = row.focus;
       });
-      setWeekPhaseOverrides(phases);
-      setWeekFocusOverrides(focuses);
+      setPhasesByPlan(phases);
+      setFocusByPlan(focuses);
     }
   }, []);
 
-  // Initial load
   useEffect(() => {
     loadProgress();
     loadWeekOverrides();
   }, [loadProgress, loadWeekOverrides]);
 
-  // Real-time subscription
   useEffect(() => {
     const channel = supabase
       .channel('workout_progress_changes')
@@ -103,9 +123,13 @@ function App() {
         (payload) => {
           if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
             const row = payload.new as DbRow;
-            setProgress((prev) => ({
+            const planId = row.plan_id || 'istrski-2026';
+            setProgressByPlan((prev) => ({
               ...prev,
-              [row.id]: dbRowToProgress(row),
+              [planId]: {
+                ...(prev[planId] ?? {}),
+                [row.id]: dbRowToProgress(row),
+              },
             }));
           }
         }
@@ -117,16 +141,16 @@ function App() {
     };
   }, []);
 
-  // Save to Supabase
-  const saveProgress = async (key: string, data: WorkoutProgress) => {
+  const saveProgress = async (planId: string, key: string, data: WorkoutProgress) => {
     setSyncing(true);
     const { error } = await supabase
       .from('workout_progress')
       .upsert({
         id: key,
+        plan_id: planId,
         completed: data.completed,
         skipped: data.skipped || false,
-        actual_workout: data.actualWorkout ?? null, // undefined = null (use default)
+        actual_workout: data.actualWorkout ?? null,
         activity_type: data.activityType || null,
         run_type: data.runType || null,
         distance_km: data.distanceKm || null,
@@ -136,7 +160,7 @@ function App() {
         comment: data.comment || null,
         strava_url: data.stravaUrl || null,
         updated_at: new Date().toISOString(),
-      });
+      }, { onConflict: 'plan_id,id' });
 
     if (error) {
       console.error('Error saving progress:', error);
@@ -147,40 +171,49 @@ function App() {
   const handleUpdateWorkout = async (weekNum: number, dayIndex: number, data: WorkoutProgress) => {
     const key = `${weekNum}-${dayIndex}`;
 
-    setProgress((prev) => ({
+    setProgressByPlan((prev) => ({
       ...prev,
-      [key]: data,
+      [activePlanId]: {
+        ...(prev[activePlanId] ?? {}),
+        [key]: data,
+      },
     }));
 
-    await saveProgress(key, data);
+    await saveProgress(activePlanId, key, data);
   };
 
   const handleUpdateWeekPhase = async (weekNum: number, phase: string) => {
-    setWeekPhaseOverrides(prev => ({ ...prev, [weekNum]: phase }));
+    setPhasesByPlan(prev => ({
+      ...prev,
+      [activePlanId]: { ...(prev[activePlanId] ?? {}), [weekNum]: phase },
+    }));
     await supabase.from('week_overrides').upsert({
+      plan_id: activePlanId,
       week_num: weekNum,
       phase,
       updated_at: new Date().toISOString(),
-    });
+    }, { onConflict: 'plan_id,week_num' });
   };
 
   const handleUpdateWeekFocus = async (weekNum: number, focus: string) => {
-    setWeekFocusOverrides(prev => ({ ...prev, [weekNum]: focus }));
+    setFocusByPlan(prev => ({
+      ...prev,
+      [activePlanId]: { ...(prev[activePlanId] ?? {}), [weekNum]: focus },
+    }));
     await supabase.from('week_overrides').upsert({
+      plan_id: activePlanId,
       week_num: weekNum,
       focus,
       updated_at: new Date().toISOString(),
-    });
+    }, { onConflict: 'plan_id,week_num' });
   };
 
-  // Count only non-rest workouts
-  const totalWorkouts = trainingPlan.weeks.reduce(
+  const totalWorkouts = activePlan.weeks.reduce(
     (acc, week) => acc + week.days.filter(day => day.type !== 'rest').length,
     0
   );
 
-  // Count completed non-rest workouts
-  const completedWorkouts = trainingPlan.weeks.reduce((acc, week) => {
+  const completedWorkouts = activePlan.weeks.reduce((acc, week) => {
     return acc + week.days.filter((day, index) => {
       if (day.type === 'rest') return false;
       const key = `${week.week}-${index}`;
@@ -229,17 +262,34 @@ function App() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50">
       <div className="max-w-4xl mx-auto px-4 py-8">
+        {/* Plan tabs */}
+        <div className="mb-4 flex gap-2 overflow-x-auto pb-1">
+          {trainingPlans.map(plan => (
+            <button
+              key={plan.id}
+              onClick={() => setActivePlanId(plan.id)}
+              className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+                plan.id === activePlanId
+                  ? 'bg-blue-600 text-white shadow'
+                  : 'bg-white text-gray-600 hover:bg-blue-50 border border-gray-200'
+              }`}
+            >
+              {plan.name}
+            </button>
+          ))}
+        </div>
+
         {/* Header */}
-        <Header syncing={syncing} />
+        <Header plan={activePlan} syncing={syncing} />
 
         {/* Progress Bar */}
         <ProgressBar completed={completedWorkouts} total={totalWorkouts} totalKm={totalKm} />
 
         {/* Weeks Accordion */}
         <div className="space-y-4">
-          {trainingPlan.weeks.map((week) => (
+          {activePlan.weeks.map((week) => (
             <WeekAccordion
-              key={week.week}
+              key={`${activePlanId}-${week.week}`}
               week={week}
               progress={progress}
               onUpdateWorkout={handleUpdateWorkout}

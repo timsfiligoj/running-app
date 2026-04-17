@@ -29,6 +29,12 @@ export interface RaceStrategy {
 }
 
 export interface TrainingPlan {
+  id: string;
+  name: string;
+  raceDate: string; // YYYY-MM-DD
+  raceLocation?: string;
+  raceUrl?: string;
+  targetPace?: string;
   athlete: string;
   goal: string;
   weeks: Week[];
