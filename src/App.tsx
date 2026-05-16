@@ -1,14 +1,17 @@
 import { useState, useEffect, useCallback } from 'react';
 import { trainingPlans } from './data/trainingPlans';
-import { ProgressData, WorkoutProgress } from './types';
+import { ProgressData, WorkoutProgress, dayKey } from './types';
 import { Header } from './components/Header';
 import { ProgressBar } from './components/ProgressBar';
 import { WeekAccordion } from './components/WeekAccordion';
+import { WeeklyDashboard } from './components/WeeklyDashboard';
+import { SuggestersProvider } from './lib/suggestersContext';
 import { supabase } from './lib/supabase';
 
 interface DbRow {
   id: string;
   plan_id?: string;
+  session_index?: number;
   completed: boolean;
   skipped?: boolean;
   actual_workout: string;
@@ -20,6 +23,7 @@ interface DbRow {
   avg_heart_rate?: number;
   comment?: string;
   strava_url?: string;
+  strava_activity_id?: number;
 }
 
 const ACTIVE_PLAN_KEY = 'activePlanId';
@@ -49,7 +53,8 @@ function App() {
     }
   }, [activePlanId]);
 
-  const dbRowToProgress = (row: DbRow): WorkoutProgress => ({
+  const dbRowToSession = (row: DbRow): WorkoutProgress => ({
+    sessionIndex: row.session_index ?? 0,
     completed: row.completed,
     skipped: row.skipped,
     actualWorkout: row.actual_workout ?? undefined,
@@ -61,7 +66,19 @@ function App() {
     avgHeartRate: row.avg_heart_rate,
     comment: row.comment,
     stravaUrl: row.strava_url,
+    stravaActivityId: row.strava_activity_id,
   });
+
+  const insertSession = (
+    bucket: ProgressData,
+    key: string,
+    session: WorkoutProgress
+  ): ProgressData => {
+    const existing = bucket[key] ?? [];
+    const without = existing.filter(s => s.sessionIndex !== session.sessionIndex);
+    const next = [...without, session].sort((a, b) => a.sessionIndex - b.sessionIndex);
+    return { ...bucket, [key]: next };
+  };
 
   const loadProgress = useCallback(async () => {
     try {
@@ -80,7 +97,9 @@ function App() {
       data?.forEach((row: DbRow) => {
         const planId = row.plan_id || 'istrski-2026';
         if (!grouped[planId]) grouped[planId] = {};
-        grouped[planId][row.id] = dbRowToProgress(row);
+        const session = dbRowToSession(row);
+        const existing = grouped[planId][row.id] ?? [];
+        grouped[planId][row.id] = [...existing, session].sort((a, b) => a.sessionIndex - b.sessionIndex);
       });
       setProgressByPlan(grouped);
       setError(null);
@@ -121,15 +140,32 @@ function App() {
         'postgres_changes',
         { event: '*', schema: 'public', table: 'workout_progress' },
         (payload) => {
+          if (payload.eventType === 'DELETE') {
+            const oldRow = payload.old as Partial<DbRow>;
+            const planId = oldRow.plan_id || 'istrski-2026';
+            const sessionIndex = oldRow.session_index ?? 0;
+            const id = oldRow.id;
+            if (!id) return;
+            setProgressByPlan(prev => {
+              const planBucket = prev[planId];
+              if (!planBucket) return prev;
+              const existing = planBucket[id];
+              if (!existing) return prev;
+              const next = existing.filter(s => s.sessionIndex !== sessionIndex);
+              const newBucket: ProgressData = { ...planBucket };
+              if (next.length === 0) delete newBucket[id];
+              else newBucket[id] = next;
+              return { ...prev, [planId]: newBucket };
+            });
+            return;
+          }
           if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
             const row = payload.new as DbRow;
             const planId = row.plan_id || 'istrski-2026';
-            setProgressByPlan((prev) => ({
+            const session = dbRowToSession(row);
+            setProgressByPlan(prev => ({
               ...prev,
-              [planId]: {
-                ...(prev[planId] ?? {}),
-                [row.id]: dbRowToProgress(row),
-              },
+              [planId]: insertSession(prev[planId] ?? {}, row.id, session),
             }));
           }
         }
@@ -141,45 +177,94 @@ function App() {
     };
   }, []);
 
-  const saveProgress = async (planId: string, key: string, data: WorkoutProgress) => {
+  const saveSession = async (planId: string, key: string, data: WorkoutProgress) => {
     setSyncing(true);
     const { error } = await supabase
       .from('workout_progress')
       .upsert({
         id: key,
         plan_id: planId,
+        session_index: data.sessionIndex,
         completed: data.completed,
         skipped: data.skipped || false,
         actual_workout: data.actualWorkout ?? null,
         activity_type: data.activityType || null,
         run_type: data.runType || null,
-        distance_km: data.distanceKm || null,
-        duration_seconds: data.durationSeconds || null,
-        elevation_meters: data.elevationMeters || null,
-        avg_heart_rate: data.avgHeartRate || null,
+        distance_km: data.distanceKm ?? null,
+        duration_seconds: data.durationSeconds ?? null,
+        elevation_meters: data.elevationMeters ?? null,
+        avg_heart_rate: data.avgHeartRate ?? null,
         comment: data.comment || null,
         strava_url: data.stravaUrl || null,
+        strava_activity_id: data.stravaActivityId ?? null,
         updated_at: new Date().toISOString(),
-      }, { onConflict: 'plan_id,id' });
+      }, { onConflict: 'plan_id,id,session_index' });
 
     if (error) {
-      console.error('Error saving progress:', error);
+      console.error('Error saving session:', error);
     }
     setSyncing(false);
   };
 
-  const handleUpdateWorkout = async (weekNum: number, dayIndex: number, data: WorkoutProgress) => {
-    const key = `${weekNum}-${dayIndex}`;
+  const handleUpdateSession = async (
+    weekNum: number,
+    dayIndex: number,
+    sessionIndex: number,
+    data: Omit<WorkoutProgress, 'sessionIndex'>,
+  ) => {
+    const key = dayKey(weekNum, dayIndex);
+    const session: WorkoutProgress = { ...data, sessionIndex };
 
-    setProgressByPlan((prev) => ({
+    setProgressByPlan(prev => ({
       ...prev,
-      [activePlanId]: {
-        ...(prev[activePlanId] ?? {}),
-        [key]: data,
-      },
+      [activePlanId]: insertSession(prev[activePlanId] ?? {}, key, session),
     }));
 
-    await saveProgress(activePlanId, key, data);
+    await saveSession(activePlanId, key, session);
+  };
+
+  const handleAddSession = async (weekNum: number, dayIndex: number) => {
+    const key = dayKey(weekNum, dayIndex);
+    const existing = progress[key] ?? [];
+    const nextIndex = existing.length === 0 ? 0 : Math.max(...existing.map(s => s.sessionIndex)) + 1;
+    const newSession: WorkoutProgress = {
+      sessionIndex: nextIndex,
+      completed: false,
+      activityType: 'other',
+    };
+
+    setProgressByPlan(prev => ({
+      ...prev,
+      [activePlanId]: insertSession(prev[activePlanId] ?? {}, key, newSession),
+    }));
+
+    await saveSession(activePlanId, key, newSession);
+  };
+
+  const handleDeleteSession = async (weekNum: number, dayIndex: number, sessionIndex: number) => {
+    const key = dayKey(weekNum, dayIndex);
+
+    setProgressByPlan(prev => {
+      const planBucket = prev[activePlanId] ?? {};
+      const sessions = (planBucket[key] ?? []).filter(s => s.sessionIndex !== sessionIndex);
+      const nextBucket: ProgressData = { ...planBucket };
+      if (sessions.length === 0) delete nextBucket[key];
+      else nextBucket[key] = sessions;
+      return { ...prev, [activePlanId]: nextBucket };
+    });
+
+    setSyncing(true);
+    const { error } = await supabase
+      .from('workout_progress')
+      .delete()
+      .eq('plan_id', activePlanId)
+      .eq('id', key)
+      .eq('session_index', sessionIndex);
+
+    if (error) {
+      console.error('Error deleting session:', error);
+    }
+    setSyncing(false);
   };
 
   const handleUpdateWeekPhase = async (weekNum: number, phase: string) => {
@@ -208,20 +293,26 @@ function App() {
     }, { onConflict: 'plan_id,week_num' });
   };
 
+  // Total "workouts" = sum of planned non-rest days across the plan.
   const totalWorkouts = activePlan.weeks.reduce(
     (acc, week) => acc + week.days.filter(day => day.type !== 'rest').length,
     0
   );
 
+  // A day counts as "completed" if at least one session is marked completed.
   const completedWorkouts = activePlan.weeks.reduce((acc, week) => {
     return acc + week.days.filter((day, index) => {
       if (day.type === 'rest') return false;
-      const key = `${week.week}-${index}`;
-      return progress[key]?.completed;
+      const sessions = progress[dayKey(week.week, index)] ?? [];
+      return sessions.some(s => s.completed);
     }).length;
   }, 0);
 
-  const totalKm = Object.values(progress).reduce((acc, p) => acc + (p.distanceKm || 0), 0);
+  // Total km across all sessions.
+  const totalKm = Object.values(progress).reduce(
+    (acc, sessions) => acc + sessions.reduce((s, w) => s + (w.distanceKm || 0), 0),
+    0
+  );
 
   if (loading) {
     return (
@@ -260,6 +351,7 @@ function App() {
   }
 
   return (
+    <SuggestersProvider>
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50">
       <div className="max-w-4xl mx-auto px-4 py-8">
         {/* Plan tabs */}
@@ -282,6 +374,9 @@ function App() {
         {/* Header */}
         <Header plan={activePlan} syncing={syncing} />
 
+        {/* Weekly dashboard (v2) */}
+        <WeeklyDashboard />
+
         {/* Progress Bar */}
         <ProgressBar completed={completedWorkouts} total={totalWorkouts} totalKm={totalKm} />
 
@@ -292,7 +387,10 @@ function App() {
               key={`${activePlanId}-${week.week}`}
               week={week}
               progress={progress}
-              onUpdateWorkout={handleUpdateWorkout}
+              planId={activePlanId}
+              onUpdateSession={handleUpdateSession}
+              onAddSession={handleAddSession}
+              onDeleteSession={handleDeleteSession}
               weekPhaseOverride={weekPhaseOverrides[week.week]}
               weekFocusOverride={weekFocusOverrides[week.week]}
               onUpdateWeekPhase={handleUpdateWeekPhase}
@@ -312,6 +410,7 @@ function App() {
         </footer>
       </div>
     </div>
+    </SuggestersProvider>
   );
 }
 

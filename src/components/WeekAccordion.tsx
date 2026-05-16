@@ -1,138 +1,124 @@
 import { useState } from 'react';
-import { Week, ProgressData, WorkoutProgress, ActivityType, RunType } from '../types';
+import {
+  Week,
+  ProgressData,
+  WorkoutProgress,
+  ActivityType,
+  RunType,
+  dayKey,
+  getDateForDay,
+  formatDateShort,
+} from '../types';
 import { WorkoutItem } from './WorkoutItem';
 
 interface WeekAccordionProps {
   week: Week;
   progress: ProgressData;
-  onUpdateWorkout: (weekNum: number, dayIndex: number, data: WorkoutProgress) => void;
+  planId: string;
+  onUpdateSession: (
+    weekNum: number,
+    dayIndex: number,
+    sessionIndex: number,
+    data: Omit<WorkoutProgress, 'sessionIndex'>,
+  ) => void;
+  onAddSession: (weekNum: number, dayIndex: number) => void;
+  onDeleteSession: (weekNum: number, dayIndex: number, sessionIndex: number) => void;
   weekPhaseOverride?: string;
   weekFocusOverride?: string;
   onUpdateWeekPhase?: (weekNum: number, phase: string) => void;
   onUpdateWeekFocus?: (weekNum: number, focus: string) => void;
 }
 
-// Helper to derive activity type and run type from planned workout type
+// Derive activity / run type from the planned workout type string.
 const getDefaultsFromPlannedType = (plannedType: string): { activityType: ActivityType; runType?: RunType } => {
   const runTypes: string[] = ['intervals', 'tempo', 'easy', 'long', 'hills', 'test', 'race', 'activation'];
 
   if (runTypes.includes(plannedType)) {
     return {
       activityType: 'run',
-      runType: plannedType === 'activation' ? 'easy' : plannedType as RunType,
+      runType: plannedType === 'activation' ? 'easy' : (plannedType as RunType),
     };
   }
-
-  if (plannedType === 'strength') {
-    return { activityType: 'strength' };
-  }
-
-  if (plannedType === 'rest') {
-    return { activityType: 'rest' };
-  }
-
+  if (plannedType === 'strength') return { activityType: 'strength' };
+  if (plannedType === 'rest') return { activityType: 'rest' };
   return { activityType: 'other' };
+};
+
+// Build a synthetic "ghost" session (no DB row yet) for an empty day with a planned workout.
+const buildGhostSession = (plannedType: string): WorkoutProgress => {
+  const defaults = getDefaultsFromPlannedType(plannedType);
+  return {
+    sessionIndex: 0,
+    completed: false,
+    activityType: defaults.activityType,
+    runType: defaults.runType,
+  };
 };
 
 export function WeekAccordion({
   week,
   progress,
-  onUpdateWorkout,
+  planId,
+  onUpdateSession,
+  onAddSession,
+  onDeleteSession,
   weekPhaseOverride,
   weekFocusOverride,
   onUpdateWeekPhase,
   onUpdateWeekFocus,
 }: WeekAccordionProps) {
+  const [isOpen, setIsOpen] = useState(false);
   const [editingPhase, setEditingPhase] = useState(false);
   const [editingFocus, setEditingFocus] = useState(false);
 
   const effectivePhase = weekPhaseOverride || week.phase;
   const effectiveFocus = weekFocusOverride || week.focus;
-  // Handle swapping workouts between two days
-  const handleSwapWorkouts = (fromIndex: number, toIndex: number) => {
-    const fromKey = `${week.week}-${fromIndex}`;
-    const toKey = `${week.week}-${toIndex}`;
 
-    const fromProgress = progress[fromKey] || { completed: false };
-    const toProgress = progress[toKey] || { completed: false };
-
-    // Get defaults from planned types
-    const fromDefaults = getDefaultsFromPlannedType(week.days[fromIndex].type);
-    const toDefaults = getDefaultsFromPlannedType(week.days[toIndex].type);
-
-    // Get effective values (saved or default)
-    const fromWorkout = fromProgress.actualWorkout ?? week.days[fromIndex].workout;
-    const toWorkout = toProgress.actualWorkout ?? week.days[toIndex].workout;
-    const fromActivityType = fromProgress.activityType ?? fromDefaults.activityType;
-    const toActivityType = toProgress.activityType ?? toDefaults.activityType;
-    const fromRunType = fromProgress.runType ?? fromDefaults.runType;
-    const toRunType = toProgress.runType ?? toDefaults.runType;
-
-    // Swap everything: workout description, activity type, run type
-    onUpdateWorkout(week.week, fromIndex, {
-      ...fromProgress,
-      actualWorkout: toWorkout,
-      activityType: toActivityType,
-      runType: toRunType,
-    });
-    onUpdateWorkout(week.week, toIndex, {
-      ...toProgress,
-      actualWorkout: fromWorkout,
-      activityType: fromActivityType,
-      runType: fromRunType,
-    });
-  };
-  const [isOpen, setIsOpen] = useState(false);
-
-  // Helper to check if a day is rest (user selection overrides planned type)
+  // A day is "non-rest" if planned is non-rest OR any session is non-rest.
   const isRestDay = (dayIndex: number) => {
-    const p = progress[`${week.week}-${dayIndex}`];
-    // User's activityType selection takes priority, otherwise use planned type
-    if (p?.activityType) {
-      return p.activityType === 'rest';
+    const sessions = progress[dayKey(week.week, dayIndex)] ?? [];
+    if (sessions.length > 0) {
+      return sessions.every(s => (s.activityType ?? 'other') === 'rest');
     }
     return week.days[dayIndex].type === 'rest';
   };
 
-  // Exclude rest days from counts (based on effective type, not just planned)
-  const nonRestDays = week.days.filter((_, i) => !isRestDay(i));
-  const completedCount = week.days.filter(
-    (_, i) => !isRestDay(i) && progress[`${week.week}-${i}`]?.completed
-  ).length;
-  const totalCount = nonRestDays.length;
+  const nonRestDayIndexes = week.days.map((_, i) => i).filter(i => !isRestDay(i));
 
-  // Week is done when all non-rest workouts are either completed OR skipped
-  const doneCount = week.days.filter(
-    (_, i) => {
-      if (isRestDay(i)) return false;
-      const p = progress[`${week.week}-${i}`];
-      return p?.completed || p?.skipped;
-    }
-  ).length;
+  // Day counts as completed if at least one session is completed.
+  const completedCount = nonRestDayIndexes.filter(i => {
+    const sessions = progress[dayKey(week.week, i)] ?? [];
+    return sessions.some(s => s.completed);
+  }).length;
+
+  // Day counts as "done" (for status color) if all sessions are completed or skipped, AND at least one exists.
+  const doneCount = nonRestDayIndexes.filter(i => {
+    const sessions = progress[dayKey(week.week, i)] ?? [];
+    if (sessions.length === 0) return false;
+    return sessions.every(s => s.completed || s.skipped);
+  }).length;
+
+  const totalCount = nonRestDayIndexes.length;
   const isWeekDone = totalCount > 0 && doneCount === totalCount;
 
-  // Determine week status: 'perfect' (all completed), 'partial' (some completed), 'skipped' (none completed)
   const weekStatus = isWeekDone
     ? completedCount === totalCount
-      ? 'perfect'   // 100% completed
+      ? 'perfect'
       : completedCount === 0
-        ? 'skipped'   // All skipped, none completed
-        : 'partial'   // Some completed, some skipped
+        ? 'skipped'
+        : 'partial'
     : 'in-progress';
 
-  // Total km for this week
+  // Sum km / elevation across all sessions in the week.
   const weekKm = week.days.reduce((sum, _, i) => {
-    const p = progress[`${week.week}-${i}`];
-    return sum + (p?.distanceKm || 0);
+    const sessions = progress[dayKey(week.week, i)] ?? [];
+    return sum + sessions.reduce((s, w) => s + (w.distanceKm || 0), 0);
   }, 0);
-
-  // Total elevation for this week
   const weekElevation = week.days.reduce((sum, _, i) => {
-    const p = progress[`${week.week}-${i}`];
-    return sum + (p?.elevationMeters || 0);
+    const sessions = progress[dayKey(week.week, i)] ?? [];
+    return sum + sessions.reduce((s, w) => s + (w.elevationMeters || 0), 0);
   }, 0);
 
-  // Styling based on week status
   const weekStyles = {
     perfect: 'bg-green-50 border-2 border-green-400',
     partial: 'bg-yellow-50 border-2 border-yellow-400',
@@ -152,12 +138,9 @@ export function WeekAccordion({
         onClick={() => setIsOpen(!isOpen)}
         className={`w-full px-4 sm:px-6 py-4 transition-colors ${weekHoverStyles[weekStatus]}`}
       >
-        {/* Top row: Title, progress, chevron */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 flex-wrap flex-1 min-w-0">
-            <span className="font-bold text-lg text-gray-800">
-              Teden {week.week}
-            </span>
+            <span className="font-bold text-lg text-gray-800">Teden {week.week}</span>
             <span className="text-sm text-gray-500">{week.title}</span>
             {weekStatus === 'perfect' && (
               <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full font-medium">
@@ -188,29 +171,19 @@ export function WeekAccordion({
                     weekStatus === 'skipped' ? 'bg-red-500' :
                     'bg-blue-500'
                   }`}
-                  style={{ width: `${(completedCount / totalCount) * 100}%` }}
+                  style={{ width: totalCount > 0 ? `${(completedCount / totalCount) * 100}%` : '0%' }}
                 />
               </div>
             </div>
             <svg
-              className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${
-                isOpen ? 'rotate-180' : ''
-              }`}
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
+              className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+              fill="none" viewBox="0 0 24 24" stroke="currentColor"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M19 9l-7 7-7-7"
-              />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
             </svg>
           </div>
         </div>
 
-        {/* Stats row: km and elevation */}
         {(weekKm > 0 || weekElevation > 0) && (
           <div className="flex items-center gap-4 mt-2">
             {weekKm > 0 && (
@@ -242,7 +215,6 @@ export function WeekAccordion({
           </div>
         )}
 
-        {/* Phase - inline editable */}
         <div className="mt-1 text-left">
           {editingPhase && isOpen ? (
             <input
@@ -258,19 +230,13 @@ export function WeekAccordion({
           ) : (
             <div
               className="text-sm text-blue-600 font-medium cursor-text hover:bg-blue-50 rounded px-1.5 py-0.5 -mx-1.5 transition-colors"
-              onClick={(e) => {
-                if (isOpen) {
-                  e.stopPropagation();
-                  setEditingPhase(true);
-                }
-              }}
+              onClick={(e) => { if (isOpen) { e.stopPropagation(); setEditingPhase(true); } }}
             >
               {effectivePhase}
             </div>
           )}
         </div>
 
-        {/* Focus - inline editable */}
         <div className="mt-0.5 text-left">
           {editingFocus && isOpen ? (
             <input
@@ -286,12 +252,7 @@ export function WeekAccordion({
           ) : (
             <div
               className="text-xs text-gray-500 cursor-text hover:bg-gray-50 rounded px-1.5 py-0.5 -mx-1.5 transition-colors"
-              onClick={(e) => {
-                if (isOpen) {
-                  e.stopPropagation();
-                  setEditingFocus(true);
-                }
-              }}
+              onClick={(e) => { if (isOpen) { e.stopPropagation(); setEditingFocus(true); } }}
             >
               {effectiveFocus}
             </div>
@@ -301,22 +262,76 @@ export function WeekAccordion({
 
       {isOpen && (
         <div className="px-6 pb-6 border-t border-gray-100">
-          <div className="space-y-3 mt-4">
-            {week.days.map((day, index) => (
-              <WorkoutItem
-                key={index}
-                day={day}
-                weekStartDate={week.startDate}
-                weekNumber={week.week}
-                weekPhase={effectivePhase}
-                weekFocus={effectiveFocus}
-                dayIndex={index}
-                allDays={week.days}
-                progress={progress[`${week.week}-${index}`] || { completed: false, actualWorkout: '' }}
-                onUpdate={(data) => onUpdateWorkout(week.week, index, data)}
-                onSwap={(toIndex) => handleSwapWorkouts(index, toIndex)}
-              />
-            ))}
+          <div className="space-y-5 mt-4">
+            {week.days.map((day, dayIndex) => {
+              const key = dayKey(week.week, dayIndex);
+              const sessions = progress[key] ?? [];
+              const date = getDateForDay(week.startDate, dayIndex);
+
+              // Empty day with a planned non-rest workout → show one "ghost" session that becomes real on edit.
+              const showGhost = sessions.length === 0 && day.type !== 'rest';
+              const ghost = showGhost ? buildGhostSession(day.type) : null;
+
+              return (
+                <div key={dayIndex} className="space-y-2">
+                  {/* Day header with planned hint */}
+                  <div className="flex items-baseline justify-between gap-2">
+                    <div className="flex items-baseline gap-2 min-w-0">
+                      <span className="font-bold text-gray-800">{day.day}</span>
+                      <span className="text-xs text-gray-500">{formatDateShort(date)}</span>
+                      {day.type === 'rest' && sessions.length === 0 && (
+                        <span className="text-xs text-gray-500 italic truncate">😴 {day.workout}</span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Sessions list (or ghost for empty non-rest days) */}
+                  {ghost ? (
+                    <WorkoutItem
+                      day={day}
+                      weekStartDate={week.startDate}
+                      weekNumber={week.week}
+                      weekPhase={effectivePhase}
+                      weekFocus={effectiveFocus}
+                      dayIndex={dayIndex}
+                      session={ghost}
+                      isGhost
+                      planId={planId}
+                      onUpdate={(data) => onUpdateSession(week.week, dayIndex, ghost.sessionIndex, data)}
+                      onDelete={() => onDeleteSession(week.week, dayIndex, ghost.sessionIndex)}
+                    />
+                  ) : (
+                    sessions.map((session) => (
+                      <WorkoutItem
+                        key={session.sessionIndex}
+                        day={day}
+                        weekStartDate={week.startDate}
+                        weekNumber={week.week}
+                        weekPhase={effectivePhase}
+                        weekFocus={effectiveFocus}
+                        dayIndex={dayIndex}
+                        session={session}
+                        isGhost={false}
+                        planId={planId}
+                        onUpdate={(data) => onUpdateSession(week.week, dayIndex, session.sessionIndex, data)}
+                        onDelete={() => onDeleteSession(week.week, dayIndex, session.sessionIndex)}
+                      />
+                    ))
+                  )}
+
+                  {/* Add session button */}
+                  <button
+                    onClick={() => onAddSession(week.week, dayIndex)}
+                    className="ml-9 inline-flex items-center gap-1.5 text-xs text-blue-600 hover:text-blue-800 font-medium"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                    </svg>
+                    Dodaj aktivnost
+                  </button>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}

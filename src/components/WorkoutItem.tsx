@@ -12,6 +12,10 @@ import {
 } from '../types';
 import { fetchStravaData } from '../lib/strava';
 import { AnalysisModal } from './AnalysisModal';
+import { useSuggesters } from '../lib/suggestersContext';
+import type { RunningGoal, RunningCategory } from '../lib/runningSuggester';
+
+type SessionUpdate = Omit<WorkoutProgress, 'sessionIndex'>;
 
 interface WorkoutItemProps {
   day: Day;
@@ -20,15 +24,49 @@ interface WorkoutItemProps {
   weekPhase: string;
   weekFocus: string;
   dayIndex: number;
-  allDays: Day[];
-  progress: WorkoutProgress;
-  onUpdate: (data: WorkoutProgress) => void;
-  onSwap: (toIndex: number) => void;
+  session: WorkoutProgress;
+  isGhost: boolean;
+  planId: string;
+  onUpdate: (data: SessionUpdate) => void;
+  onDelete: () => void;
+}
+
+// Detect placeholder workouts from cyclePlans (e.g. "klikni Predlagaj tek")
+function detectSuggesterPlaceholder(text: string): 'run' | 'strength' | null {
+  const t = text.toLowerCase();
+  if (t.includes('predlagaj tek')) return 'run';
+  if (t.includes('predlagaj moč')) return 'strength';
+  return null;
+}
+
+// Map day.type → running suggester category
+function runTypeToCategory(t: string): RunningCategory | undefined {
+  switch (t) {
+    case 'easy': return 'easy';
+    case 'tempo': return 'tempo';
+    case 'intervals': return 'interval';
+    case 'long': return 'long';
+    case 'hills': return 'hill';
+    case 'activation': return 'easy';
+    case 'recovery': return 'recovery';
+    default: return undefined;
+  }
+}
+
+// Infer running goal from plan id + week phase
+function goalForPlan(planId: string, weekPhase: string): RunningGoal {
+  if (planId === 'baza-pb-2026') {
+    if (weekPhase.includes('F4')) return '5k_pb';
+    return 'hm_pb';
+  }
+  if (planId === 'lj-hm-2026' || planId === 'palmanova-hm-2026') return 'hm_pb';
+  return 'hm_pb';
 }
 
 const activityLabels: Record<ActivityType, string> = {
   run: '🏃 Tek',
   strength: '💪 Moč',
+  bike: '🚴 Kolo',
   rest: '😴 Počitek',
   other: '📋 Drugo',
 };
@@ -56,30 +94,28 @@ const runTypeColors: Record<RunType, string> = {
 const activityTypeColors: Record<ActivityType, string> = {
   run: 'bg-blue-100 text-blue-700',
   strength: 'bg-purple-100 text-purple-700',
+  bike: 'bg-cyan-100 text-cyan-700',
   rest: 'bg-gray-100 text-gray-600',
   other: 'bg-slate-100 text-slate-700',
 };
 
-// Map planned workout type to activity type and run type
 const getDefaultsFromPlannedType = (plannedType: string): { activityType: ActivityType; runType?: RunType } => {
   const runTypes: string[] = ['intervals', 'tempo', 'easy', 'long', 'hills', 'test', 'race', 'activation'];
-
   if (runTypes.includes(plannedType)) {
     return {
       activityType: 'run',
-      runType: plannedType === 'activation' ? 'easy' : plannedType as RunType,
+      runType: plannedType === 'activation' ? 'easy' : (plannedType as RunType),
     };
   }
-
-  if (plannedType === 'strength') {
-    return { activityType: 'strength' };
-  }
-
-  if (plannedType === 'rest') {
-    return { activityType: 'rest' };
-  }
-
+  if (plannedType === 'strength') return { activityType: 'strength' };
+  if (plannedType === 'rest') return { activityType: 'rest' };
   return { activityType: 'other' };
+};
+
+const stripSessionIndex = (s: WorkoutProgress): SessionUpdate => {
+  const { sessionIndex: _omit, ...rest } = s;
+  void _omit;
+  return rest;
 };
 
 export function WorkoutItem({
@@ -89,86 +125,70 @@ export function WorkoutItem({
   weekPhase,
   weekFocus,
   dayIndex,
-  allDays,
-  progress,
+  session,
+  isGhost,
+  planId,
   onUpdate,
-  onSwap,
+  onDelete,
 }: WorkoutItemProps) {
+  const { openRunning, openStrength } = useSuggesters();
   const [isExpanded, setIsExpanded] = useState(false);
-  const [showSwapOptions, setShowSwapOptions] = useState(false);
   const [showAnalysis, setShowAnalysis] = useState(false);
 
-  // Local state for form fields
-  const [localData, setLocalData] = useState<WorkoutProgress>(progress);
+  // Local edit state mirrors `session` until the user saves.
+  const [localData, setLocalData] = useState<WorkoutProgress>(session);
   const [durationInput, setDurationInput] = useState(
-    progress.durationSeconds ? formatDuration(progress.durationSeconds) : ''
+    session.durationSeconds ? formatDuration(session.durationSeconds) : ''
   );
   const [hasChanges, setHasChanges] = useState(false);
   const [stravaLoading, setStravaLoading] = useState(false);
   const [stravaError, setStravaError] = useState<string | null>(null);
 
-  // Sync local state when progress changes from outside (e.g., real-time sync)
   useEffect(() => {
     if (!hasChanges) {
-      setLocalData(progress);
-      setDurationInput(progress.durationSeconds ? formatDuration(progress.durationSeconds) : '');
+      setLocalData(session);
+      setDurationInput(session.durationSeconds ? formatDuration(session.durationSeconds) : '');
     }
-  }, [progress, hasChanges]);
+  }, [session, hasChanges]);
 
   const date = getDateForDay(weekStartDate, dayIndex);
   const dateStr = formatDateShort(date);
 
-  // Get defaults from planned type
   const defaults = getDefaultsFromPlannedType(day.type);
-
-  // Effective values (use saved value or default from planned type)
-  const effectiveActivityType = localData.activityType ?? defaults.activityType;
+  const effectiveActivityType: ActivityType = localData.activityType ?? defaults.activityType;
   const effectiveRunType = localData.runType ?? defaults.runType;
 
-  // Calculate pace from local data
   const pace = localData.distanceKm && localData.durationSeconds
     ? calculatePace(localData.distanceKm, localData.durationSeconds)
     : null;
 
-  // Get the badge info - show actual selection or effective default
   const getBadgeInfo = () => {
     if (effectiveActivityType === 'run' && effectiveRunType) {
-      return {
-        label: runTypeLabels[effectiveRunType],
-        color: runTypeColors[effectiveRunType],
-      };
+      return { label: runTypeLabels[effectiveRunType], color: runTypeColors[effectiveRunType] };
     }
-    return {
-      label: activityLabels[effectiveActivityType],
-      color: activityTypeColors[effectiveActivityType],
-    };
+    return { label: activityLabels[effectiveActivityType], color: activityTypeColors[effectiveActivityType] };
   };
-
   const badgeInfo = getBadgeInfo();
 
-  // Show actual workout if set (including empty string), otherwise planned
   const displayedWorkout = localData.actualWorkout ?? day.workout;
 
+  // Commits whatever is in `localData` (with derived duration) up to the parent.
+  const commit = (override?: Partial<WorkoutProgress>) => {
+    const merged = { ...localData, ...(override ?? {}) };
+    const seconds = parseDuration(durationInput);
+    onUpdate(stripSessionIndex({ ...merged, durationSeconds: seconds || merged.durationSeconds || undefined }));
+  };
+
   const handleToggleComplete = () => {
-    const newData = {
-      ...localData,
-      completed: !localData.completed,
-      skipped: false, // Clear skipped when completing
-    };
+    const newData = { ...localData, completed: !localData.completed, skipped: false };
     setLocalData(newData);
-    // Complete toggle saves immediately
-    onUpdate(newData);
+    onUpdate(stripSessionIndex(newData));
   };
 
   const handleToggleSkip = () => {
-    const newData = {
-      ...localData,
-      skipped: !localData.skipped,
-      completed: false, // Clear completed when skipping
-    };
+    const newData = { ...localData, skipped: !localData.skipped, completed: false };
     setLocalData(newData);
-    // Skip toggle saves immediately
-    onUpdate(newData);
+    onUpdate(stripSessionIndex(newData));
   };
 
   const updateLocalData = (updates: Partial<WorkoutProgress>) => {
@@ -183,9 +203,7 @@ export function WorkoutItem({
     });
   };
 
-  const handleRunTypeChange = (type: RunType) => {
-    updateLocalData({ runType: type });
-  };
+  const handleRunTypeChange = (type: RunType) => updateLocalData({ runType: type });
 
   const handleDistanceChange = (value: string) => {
     const num = parseFloat(value);
@@ -207,14 +225,8 @@ export function WorkoutItem({
     updateLocalData({ avgHeartRate: isNaN(num) ? undefined : num });
   };
 
-  const handleCommentChange = (value: string) => {
-    updateLocalData({ comment: value });
-  };
-
-  const handleActualWorkoutChange = (value: string) => {
-    updateLocalData({ actualWorkout: value });
-  };
-
+  const handleCommentChange = (value: string) => updateLocalData({ comment: value });
+  const handleActualWorkoutChange = (value: string) => updateLocalData({ actualWorkout: value });
   const handleStravaUrlChange = (value: string) => {
     updateLocalData({ stravaUrl: value });
     setStravaError(null);
@@ -222,16 +234,13 @@ export function WorkoutItem({
 
   const handleFetchStrava = async () => {
     if (!localData.stravaUrl) return;
-
     setStravaLoading(true);
     setStravaError(null);
 
     const result = await fetchStravaData(localData.stravaUrl);
-
     if (result.error) {
       setStravaError(result.error);
     } else if (result.data) {
-      // Update all available fields at once
       setLocalData(prev => ({
         ...prev,
         ...(result.data!.distanceKm !== null && { distanceKm: result.data!.distanceKm }),
@@ -239,62 +248,52 @@ export function WorkoutItem({
         ...(result.data!.elevationMeters !== null && { elevationMeters: result.data!.elevationMeters }),
         ...(result.data!.avgHeartRate !== null && { avgHeartRate: result.data!.avgHeartRate }),
       }));
-      // Update duration input
       if (result.data.durationSeconds !== null) {
         setDurationInput(formatDuration(result.data.durationSeconds));
       }
       setHasChanges(true);
     }
-
     setStravaLoading(false);
   };
 
   const handleSave = () => {
-    const seconds = parseDuration(durationInput);
-    const dataToSave = {
-      ...localData,
-      durationSeconds: seconds || undefined,
-    };
-    onUpdate(dataToSave);
+    commit();
     setHasChanges(false);
   };
 
   const handleCancel = () => {
-    setLocalData(progress);
-    setDurationInput(progress.durationSeconds ? formatDuration(progress.durationSeconds) : '');
+    setLocalData(session);
+    setDurationInput(session.durationSeconds ? formatDuration(session.durationSeconds) : '');
     setHasChanges(false);
     setIsExpanded(false);
   };
 
+  const containerColor = localData.skipped
+    ? 'border-red-400 bg-red-50'
+    : localData.completed
+      ? 'border-green-400 bg-green-50'
+      : isGhost
+        ? 'border-gray-200 border-dashed bg-white/60'
+        : 'border-gray-200 bg-white';
+
   return (
-    <div className={`bg-white rounded-lg border overflow-hidden ${
-      progress.skipped
-        ? 'border-red-400 bg-red-50'
-        : progress.completed
-        ? 'border-green-400 bg-green-50'
-        : 'border-gray-200'
-    }`}>
-      {/* Main row - clickable to expand */}
+    <div className={`rounded-lg border overflow-hidden ${containerColor}`}>
+      {/* Main row */}
       <div
         className="p-4 cursor-pointer hover:bg-gray-50 transition-colors"
         onClick={() => setIsExpanded(!isExpanded)}
       >
-        {/* Top row: checkbox, skip button, day/date, badge, expand */}
         <div className="flex items-center gap-3">
-          {/* Checkbox / Checkmark - hide when skipped and collapsed */}
-          {!(progress.skipped && !isExpanded) && (
+          {!(localData.skipped && !isExpanded) && (
             <button
-              onClick={(e) => {
-                e.stopPropagation();
-                handleToggleComplete();
-              }}
+              onClick={(e) => { e.stopPropagation(); handleToggleComplete(); }}
               className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
-                progress.completed
+                localData.completed
                   ? 'bg-green-500 border-green-500 text-white'
                   : 'border-gray-300 hover:border-green-400'
               }`}
             >
-              {progress.completed && (
+              {localData.completed && (
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                 </svg>
@@ -302,21 +301,17 @@ export function WorkoutItem({
             </button>
           )}
 
-          {/* Skip button (X) - only show when expanded OR when already skipped */}
-          {(isExpanded || progress.skipped) && (
+          {(isExpanded || localData.skipped) && (
             <button
-              onClick={(e) => {
-                e.stopPropagation();
-                handleToggleSkip();
-              }}
+              onClick={(e) => { e.stopPropagation(); handleToggleSkip(); }}
               title="Izpuščen trening"
               className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
-                progress.skipped
+                localData.skipped
                   ? 'bg-red-500 border-red-500 text-white'
                   : 'border-gray-300 hover:border-red-400'
               }`}
             >
-              {progress.skipped ? (
+              {localData.skipped ? (
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                 </svg>
@@ -328,47 +323,97 @@ export function WorkoutItem({
             </button>
           )}
 
-          {/* Day and date */}
           <div className="flex-shrink-0">
             <div className="font-bold text-gray-900">{day.day}</div>
             <div className="text-sm text-gray-500">{dateStr}</div>
           </div>
 
-          {/* Activity badge - shows actual selection or planned */}
           <span className={`px-2 py-1 rounded-full text-xs font-medium flex-shrink-0 ${badgeInfo.color}`}>
             {badgeInfo.label}
           </span>
 
-          {/* Spacer */}
+          {!isGhost && session.sessionIndex > 0 && (
+            <span className="px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-indigo-50 text-indigo-700">
+              #{session.sessionIndex + 1}
+            </span>
+          )}
+
+          {localData.stravaActivityId && (
+            <span title="Iz Strave" className="text-orange-500 flex-shrink-0">
+              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169" />
+              </svg>
+            </span>
+          )}
+
           <div className="flex-1" />
 
-          {/* Expand indicator */}
           <div className="p-2 text-gray-400 flex-shrink-0">
             <svg
               className={`w-5 h-5 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
+              fill="none" viewBox="0 0 24 24" stroke="currentColor"
             >
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
             </svg>
           </div>
         </div>
 
-        {/* Workout description - full width below */}
-        <p className={`text-sm mt-2 ml-9 ${
-          progress.skipped
-            ? 'text-red-400 line-through'
-            : 'text-gray-700'
-        }`}>
+        <p className={`text-sm mt-2 ml-9 ${localData.skipped ? 'text-red-400 line-through' : 'text-gray-700'}`}>
           {displayedWorkout}
         </p>
-        {progress.skipped && (
+        {(() => {
+          // Resolve suggester kind: user's explicit activityType wins over text placeholder.
+          // This way changing activityType to "Moč" flips the button to "Predlagaj moč"
+          // even if the placeholder text still says "Predlagaj tek".
+          const activity = localData.activityType;
+          const kind: 'run' | 'strength' | null =
+            activity === 'strength' ? 'strength'
+            : activity === 'run' ? 'run'
+            : activity === 'rest' || activity === 'bike' || activity === 'other' ? null
+            : detectSuggesterPlaceholder(day.workout);
+          // Only hide if user wrote a non-placeholder actualWorkout (suggestion accept
+          // writes "[Predlog] …" which is allowed to stay visible until completed).
+          const hasManualActual = !!localData.actualWorkout && !localData.actualWorkout.startsWith('[Predlog]');
+          if (!kind || hasManualActual || localData.completed || localData.skipped) return null;
+          const dayIso = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+          const handleClick = (e: React.MouseEvent) => {
+            e.stopPropagation();
+            if (kind === 'run') {
+              openRunning({
+                date: dayIso,
+                goal: goalForPlan(planId, weekPhase),
+                category: runTypeToCategory(day.type),
+                planId,
+                weekNum: weekNumber,
+                dayIndex,
+              });
+            } else {
+              openStrength({
+                date: dayIso,
+                planId,
+                weekNum: weekNumber,
+                dayIndex,
+              });
+            }
+          };
+          const labelColor = kind === 'run'
+            ? 'text-cyan-700 bg-cyan-50 hover:bg-cyan-100 border-cyan-200'
+            : 'text-pink-700 bg-pink-50 hover:bg-pink-100 border-pink-200';
+          return (
+            <button
+              onClick={handleClick}
+              className={`mt-2 ml-9 inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium border rounded-lg transition-colors ${labelColor}`}
+            >
+              🎯 Predlagaj {kind === 'run' ? 'tek' : 'moč'}
+            </button>
+          );
+        })()}
+        {localData.skipped && (
           <p className="text-xs text-red-500 mt-1 ml-9 font-medium">Izpuščeno</p>
         )}
       </div>
 
-      {/* Logged data summary (if any) - when collapsed */}
+      {/* Logged data summary when collapsed */}
       {!isExpanded && (localData.distanceKm || localData.durationSeconds || localData.elevationMeters || localData.avgHeartRate) && (
         <div className="px-4 pb-3 flex flex-wrap gap-3 text-sm">
           {localData.distanceKm && (
@@ -416,10 +461,7 @@ export function WorkoutItem({
           )}
           {effectiveActivityType === 'run' && (localData.stravaUrl || localData.distanceKm) && (
             <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setShowAnalysis(true);
-              }}
+              onClick={(e) => { e.stopPropagation(); setShowAnalysis(true); }}
               className="inline-flex items-center gap-1.5 text-sm text-violet-600 hover:text-violet-700 font-medium bg-violet-50 hover:bg-violet-100 px-3 py-1 rounded-lg transition-colors"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -431,53 +473,14 @@ export function WorkoutItem({
         </div>
       )}
 
-      {/* Comment preview when collapsed */}
       {!isExpanded && localData.comment && (
         <div className="px-4 pb-3">
           <p className="text-sm text-gray-500 italic">"{localData.comment}"</p>
         </div>
       )}
 
-      {/* Expanded edit section */}
       {isExpanded && (
         <div className="border-t border-gray-100 p-4 bg-gray-50 space-y-4">
-          {/* Swap workout with another day */}
-          <div>
-            <button
-              type="button"
-              onClick={() => setShowSwapOptions(!showSwapOptions)}
-              className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-purple-700 bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors"
-            >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
-              </svg>
-              Zamenjaj dan
-            </button>
-            {showSwapOptions && (
-              <div className="mt-2 p-3 bg-purple-50 rounded-lg border border-purple-200">
-                <p className="text-sm text-purple-700 mb-2">Zamenjaj s:</p>
-                <div className="flex flex-wrap gap-2">
-                  {allDays.map((otherDay, idx) => (
-                    idx !== dayIndex && (
-                      <button
-                        key={idx}
-                        onClick={() => {
-                          onSwap(idx);
-                          setShowSwapOptions(false);
-                          setIsExpanded(false);
-                        }}
-                        className="px-3 py-1.5 text-sm font-medium bg-white border border-purple-300 text-purple-700 hover:bg-purple-100 rounded-lg transition-colors"
-                      >
-                        {otherDay.day}
-                      </button>
-                    )
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Workout description edit */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Opis treninga</label>
             <textarea
@@ -496,11 +499,10 @@ export function WorkoutItem({
             )}
           </div>
 
-          {/* Activity type selector */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Tip aktivnosti</label>
             <div className="flex flex-wrap gap-2">
-              {(['run', 'strength', 'rest', 'other'] as ActivityType[]).map((type) => (
+              {(['run', 'strength', 'bike', 'rest', 'other'] as ActivityType[]).map((type) => (
                 <button
                   key={type}
                   onClick={() => handleActivityTypeChange(type)}
@@ -516,10 +518,8 @@ export function WorkoutItem({
             </div>
           </div>
 
-          {/* Run-specific fields */}
           {effectiveActivityType === 'run' && (
             <>
-              {/* Run type selector */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Vrsta teka</label>
                 <div className="flex flex-wrap gap-2">
@@ -539,14 +539,11 @@ export function WorkoutItem({
                 </div>
               </div>
 
-              {/* Distance, Duration, Elevation, HR, Tempo */}
               <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Dolžina (km)</label>
                   <input
-                    type="number"
-                    step="0.01"
-                    value={localData.distanceKm || ''}
+                    type="number" step="0.01" value={localData.distanceKm || ''}
                     onChange={(e) => handleDistanceChange(e.target.value)}
                     placeholder="12.55"
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -555,8 +552,7 @@ export function WorkoutItem({
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Čas (h:mm:ss)</label>
                   <input
-                    type="text"
-                    value={durationInput}
+                    type="text" value={durationInput}
                     onChange={(e) => handleDurationChange(e.target.value)}
                     placeholder="1:05:30"
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -565,8 +561,7 @@ export function WorkoutItem({
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Vzpon (m)</label>
                   <input
-                    type="number"
-                    value={localData.elevationMeters || ''}
+                    type="number" value={localData.elevationMeters || ''}
                     onChange={(e) => handleElevationChange(e.target.value)}
                     placeholder="150"
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -575,8 +570,7 @@ export function WorkoutItem({
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Povp. HR (bpm)</label>
                   <input
-                    type="number"
-                    value={localData.avgHeartRate || ''}
+                    type="number" value={localData.avgHeartRate || ''}
                     onChange={(e) => handleHeartRateChange(e.target.value)}
                     placeholder="145"
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -590,13 +584,11 @@ export function WorkoutItem({
                 </div>
               </div>
 
-              {/* Strava URL */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Strava URL</label>
                 <div className="flex gap-2">
                   <input
-                    type="url"
-                    value={localData.stravaUrl || ''}
+                    type="url" value={localData.stravaUrl || ''}
                     onChange={(e) => handleStravaUrlChange(e.target.value)}
                     placeholder="https://www.strava.com/activities/..."
                     className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -619,9 +611,7 @@ export function WorkoutItem({
                         </svg>
                         Nalagam...
                       </>
-                    ) : (
-                      'Naloži'
-                    )}
+                    ) : 'Naloži'}
                   </button>
                 </div>
                 {stravaError && (
@@ -631,7 +621,45 @@ export function WorkoutItem({
             </>
           )}
 
-          {/* Comment */}
+          {/* Non-run distance/duration for bike etc. */}
+          {(effectiveActivityType === 'bike' || effectiveActivityType === 'other') && (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Dolžina (km)</label>
+                <input
+                  type="number" step="0.01" value={localData.distanceKm || ''}
+                  onChange={(e) => handleDistanceChange(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Čas (h:mm:ss)</label>
+                <input
+                  type="text" value={durationInput}
+                  onChange={(e) => handleDurationChange(e.target.value)}
+                  placeholder="0:45:00"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Vzpon (m)</label>
+                <input
+                  type="number" value={localData.elevationMeters || ''}
+                  onChange={(e) => handleElevationChange(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Povp. HR (bpm)</label>
+                <input
+                  type="number" value={localData.avgHeartRate || ''}
+                  onChange={(e) => handleHeartRateChange(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+            </div>
+          )}
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Komentar</label>
             <textarea
@@ -643,8 +671,7 @@ export function WorkoutItem({
             />
           </div>
 
-          {/* Save / Cancel / Analyze buttons */}
-          <div className="flex gap-3 pt-2">
+          <div className="flex flex-wrap gap-3 pt-2">
             <button
               onClick={handleSave}
               disabled={!hasChanges}
@@ -662,6 +689,17 @@ export function WorkoutItem({
             >
               Prekliči
             </button>
+            {!isGhost && (
+              <button
+                onClick={() => {
+                  if (confirm('Izbrišem to aktivnost?')) onDelete();
+                }}
+                className="px-3 py-2 rounded-lg text-sm font-medium bg-white border border-red-200 text-red-600 hover:bg-red-50 transition-colors"
+                title="Izbriši aktivnost"
+              >
+                🗑️ Izbriši
+              </button>
+            )}
             <div className="flex-1" />
             {effectiveActivityType === 'run' && (localData.stravaUrl || localData.distanceKm) && (
               <button
@@ -677,13 +715,13 @@ export function WorkoutItem({
           </div>
         </div>
       )}
-      {/* Analysis Modal */}
+
       <AnalysisModal
         isOpen={showAnalysis}
         onClose={() => setShowAnalysis(false)}
         stravaUrl={localData.stravaUrl}
         date={date.toISOString().split('T')[0]}
-        workoutKey={`${weekNumber}-${dayIndex}`}
+        workoutKey={`${weekNumber}-${dayIndex}-${session.sessionIndex}`}
         workoutContext={{
           plannedWorkout: day.workout,
           runType: effectiveRunType,

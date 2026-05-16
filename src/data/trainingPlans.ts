@@ -318,4 +318,13 @@ export const tekTrojkPlan: TrainingPlan = {
   }
 };
 
-export const trainingPlans: TrainingPlan[] = [tekTrojkPlan, istrskiPlan];
+import { bazaPbPlan, ljHmPlan, palmanovaPlan } from './cyclePlans';
+
+// Order: future plans first (current focus), then historical
+export const trainingPlans: TrainingPlan[] = [
+  bazaPbPlan,
+  ljHmPlan,
+  palmanovaPlan,
+  tekTrojkPlan,
+  istrskiPlan,
+];

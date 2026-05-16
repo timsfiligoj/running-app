@@ -85,14 +85,55 @@ Deno.serve(async (req) => {
     const elevationMeters = activity.total_elevation_gain ? Math.round(activity.total_elevation_gain) : null;
     // Average heart rate (if available) - rounded to whole number
     const avgHeartRate = activity.average_heartrate ? Math.round(activity.average_heartrate) : null;
+    const maxHeartRate = activity.max_heartrate ? Math.round(activity.max_heartrate) : null;
+    const temperatureC = typeof activity.average_temp === 'number' ? Math.round(activity.average_temp) : null;
+    const startDate = activity.start_date_local || activity.start_date || null;
+    const activityType = activity.type || null;
+    const sportType = activity.sport_type || null;
+    const workoutTypeCode = typeof activity.workout_type === 'number' ? activity.workout_type : null;
+
+    // Splits per km (Strava provides splits_metric array)
+    const splits = Array.isArray(activity.splits_metric)
+      ? activity.splits_metric.map((s: Record<string, unknown>, i: number) => ({
+          km: i + 1,
+          pace_seconds: typeof s.moving_time === 'number' && typeof s.distance === 'number' && s.distance > 0
+            ? (s.moving_time as number) / ((s.distance as number) / 1000)
+            : null,
+          hr: typeof s.average_heartrate === 'number' ? Math.round(s.average_heartrate as number) : undefined,
+          elevation: typeof s.elevation_difference === 'number' ? Math.round(s.elevation_difference as number) : undefined,
+        }))
+      : null;
+
+    // Laps (only present for structured workouts)
+    const laps = Array.isArray(activity.laps)
+      ? activity.laps.map((l: Record<string, unknown>, i: number) => ({
+          lap: i + 1,
+          distance_m: typeof l.distance === 'number' ? Math.round(l.distance as number) : 0,
+          duration_seconds: typeof l.moving_time === 'number' ? (l.moving_time as number) : 0,
+          pace_seconds: typeof l.moving_time === 'number' && typeof l.distance === 'number' && (l.distance as number) > 0
+            ? (l.moving_time as number) / (((l.distance as number)) / 1000)
+            : null,
+          hr: typeof l.average_heartrate === 'number' ? Math.round(l.average_heartrate as number) : undefined,
+        }))
+      : null;
 
     return new Response(
       JSON.stringify({
+        // Backward-compatible fields
         distanceKm,
         durationSeconds,
         elevationMeters,
         avgHeartRate,
         title: activity.name || null,
+        // Extended v2 fields for classifier
+        maxHeartRate,
+        temperatureC,
+        startDate,
+        activityType,
+        sportType,
+        workoutTypeCode,
+        splits,
+        laps,
       }),
       { headers: corsHeaders }
     );

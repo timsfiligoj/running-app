@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import type { RunSplit, RunLap } from '../types';
 
 export interface StravaData {
   distanceKm: number | null;
@@ -6,6 +7,17 @@ export interface StravaData {
   elevationMeters: number | null;
   avgHeartRate: number | null;
   title: string | null;
+}
+
+export interface StravaDataFull extends StravaData {
+  maxHeartRate: number | null;
+  temperatureC: number | null;
+  startDate: string | null;
+  activityType: string | null;
+  sportType: string | null;
+  workoutTypeCode: number | null;
+  splits: RunSplit[] | null;
+  laps: RunLap[] | null;
 }
 
 export interface StravaActivitySummary {
@@ -124,4 +136,67 @@ export async function fetchStravaData(stravaUrl: string): Promise<FetchStravaRes
       error: 'Napaka pri povezavi s strežnikom',
     };
   }
+}
+
+export interface FetchStravaFullResult {
+  data: StravaDataFull | null;
+  error: string | null;
+}
+
+/**
+ * Like fetchStravaData but also returns max_hr, temperature, start_date,
+ * splits, laps, sport_type, workout_type code — needed for auto-classification.
+ */
+export async function fetchStravaDataFull(stravaUrl: string): Promise<FetchStravaFullResult> {
+  if (!stravaUrl || !stravaUrl.includes('strava.com/activities/')) {
+    return { data: null, error: 'Neveljaven Strava URL' };
+  }
+
+  try {
+    const { data, error } = await supabase.functions.invoke('fetch-strava', {
+      body: { stravaUrl },
+    });
+
+    if (error) {
+      console.error('Supabase function error:', error);
+      return { data: null, error: 'Napaka pri pridobivanju podatkov iz Strave' };
+    }
+
+    if (data?.error) {
+      return { data: null, error: data.error };
+    }
+
+    return {
+      data: {
+        distanceKm: data.distanceKm,
+        durationSeconds: data.durationSeconds,
+        elevationMeters: data.elevationMeters,
+        avgHeartRate: data.avgHeartRate,
+        title: data.title,
+        maxHeartRate: data.maxHeartRate ?? null,
+        temperatureC: data.temperatureC ?? null,
+        startDate: data.startDate ?? null,
+        activityType: data.activityType ?? null,
+        sportType: data.sportType ?? null,
+        workoutTypeCode: data.workoutTypeCode ?? null,
+        splits: data.splits ?? null,
+        laps: data.laps ?? null,
+      },
+      error: null,
+    };
+  } catch (err) {
+    console.error('Fetch Strava full error:', err);
+    return { data: null, error: 'Napaka pri povezavi s strežnikom' };
+  }
+}
+
+/**
+ * Extract Strava activity ID from URL.
+ * Returns null if URL is malformed.
+ */
+export function extractStravaActivityId(url: string): number | null {
+  const match = url.match(/strava\.com\/activities\/(\d+)/);
+  if (!match) return null;
+  const id = parseInt(match[1], 10);
+  return Number.isFinite(id) ? id : null;
 }
