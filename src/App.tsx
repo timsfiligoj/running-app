@@ -4,8 +4,6 @@ import { ProgressData, WorkoutProgress, dayKey } from './types';
 import { Header } from './components/Header';
 import { ProgressBar } from './components/ProgressBar';
 import { WeekAccordion } from './components/WeekAccordion';
-import { WeeklyDashboard } from './components/WeeklyDashboard';
-import { SuggestersProvider } from './lib/suggestersContext';
 import { supabase } from './lib/supabase';
 
 interface DbRow {
@@ -351,7 +349,6 @@ function App() {
   }
 
   return (
-    <SuggestersProvider>
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50">
       <div className="max-w-4xl mx-auto px-4 py-8">
         {/* Plan tabs */}
@@ -373,9 +370,6 @@ function App() {
 
         {/* Header */}
         <Header plan={activePlan} syncing={syncing} />
-
-        {/* Weekly dashboard (v2) */}
-        <WeeklyDashboard />
 
         {/* Progress Bar */}
         <ProgressBar completed={completedWorkouts} total={totalWorkouts} totalKm={totalKm} />
@@ -410,7 +404,6 @@ function App() {
         </footer>
       </div>
     </div>
-    </SuggestersProvider>
   );
 }
 

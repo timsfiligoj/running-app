@@ -58,29 +58,29 @@ const DAY_LABELS = ['Pon', 'Tor', 'Sre', 'Čet', 'Pet', 'Sob', 'Ned'] as const;
 // ============================================================
 
 const NORMAL_WEEK: Day[] = [
-  { day: 'Pon', type: 'easy', workout: 'Lahek tek (klikni Predlagaj tek za točen workout)' },
-  { day: 'Tor', type: 'intervals', workout: 'Hard sesija — intervals (klikni Predlagaj tek)' },
-  { day: 'Sre', type: 'strength', workout: 'Strength (klikni Predlagaj moč)' },
-  { day: 'Čet', type: 'tempo', workout: 'Hard sesija — tempo (klikni Predlagaj tek)' },
+  { day: 'Pon', type: 'easy', workout: 'Lahek tek' },
+  { day: 'Tor', type: 'intervals', workout: 'Intervali (hard sesija)  •  💪 Legs & Core' },
+  { day: 'Sre', type: 'easy', workout: 'Lahek tek' },
+  { day: 'Čet', type: 'tempo', workout: 'Tempo (hard sesija)  •  💪 Legs & Core' },
   { day: 'Pet', type: 'rest', workout: 'Počitek ali lahka mobilnost' },
-  { day: 'Sob', type: 'long', workout: 'Long tek (klikni Predlagaj tek)' },
-  { day: 'Ned', type: 'easy', workout: 'Lahek tek + strength (klikni Predlagaj moč)' },
+  { day: 'Sob', type: 'long', workout: 'Long tek' },
+  { day: 'Ned', type: 'easy', workout: 'Lahek tek' },
 ];
 
 const DELOAD_WEEK: Day[] = [
   { day: 'Pon', type: 'easy', workout: 'Lahek tek — deload (krajši)' },
-  { day: 'Tor', type: 'intervals', workout: 'Krajša hard sesija — deload (klikni Predlagaj tek)' },
+  { day: 'Tor', type: 'intervals', workout: 'Krajši intervali — deload' },
   { day: 'Sre', type: 'rest', workout: 'Počitek — deload' },
   { day: 'Čet', type: 'easy', workout: 'Lahek tek — deload' },
   { day: 'Pet', type: 'rest', workout: 'Počitek' },
-  { day: 'Sob', type: 'long', workout: 'Krajši long — deload (klikni Predlagaj tek)' },
+  { day: 'Sob', type: 'long', workout: 'Krajši long — deload' },
   { day: 'Ned', type: 'easy', workout: 'Lahek tek — deload' },
 ];
 
 function taperWeek(raceDayIndex: number, raceLabel: string): Day[] {
   // raceDayIndex: 0=Pon ... 6=Ned (Slovenian week)
   const days: Day[] = DAY_LABELS.map((dl) => ({
-    day: dl, type: 'easy', workout: 'Lahek tek — taper (klikni Predlagaj tek)',
+    day: dl, type: 'easy', workout: 'Lahek tek — taper',
   }));
   // Day-by-day mapping for typical race week (race on Sunday assumption, adjust if needed)
   // We position relative to race day:
@@ -100,7 +100,7 @@ function taperWeek(raceDayIndex: number, raceLabel: string): Day[] {
       d.workout = 'Počitek ali 20-30 min easy mobilizacija';
     } else if (daysToRace === 4) {
       d.type = 'easy';
-      d.workout = 'Krajši pace-feel tek (klikni Predlagaj tek)';
+      d.workout = 'Krajši pace-feel tek + strides';
     } else if (daysToRace === 5) {
       d.type = 'easy';
       d.workout = 'Lahek tek — taper';
@@ -229,18 +229,19 @@ function generatePlan(opts: PlanGenOpts): TrainingPlan {
 }
 
 // ============================================================
-// Plan 1: Baza + 5K/10K PB poskusi (F1+F2+F3+F4)
-// 10.5.2026 → 9.8.2026, 13 tednov
+// Plan 1: LJ Baza — bazni blok pred LJ Maratonom (F1+F2+F3)
+// 11.5.2026 → 19.7.2026, 10 tednov
+// (tedni 11-13 odstranjeni; nadaljuje se v ljMaratonPlan od 20.7.)
 // ============================================================
 
 export const bazaPbPlan: TrainingPlan = generatePlan({
   id: 'baza-pb-2026',
-  name: 'Baza + 5K/10K PB poskusi',
+  name: 'LJ Baza',
   startDate: '2026-05-11',          // First Mon after Istrski recovery start
-  totalWeeks: 13,
-  raceDate: '2026-08-09',            // end of F4, no specific race
+  totalWeeks: 10,
+  raceDate: '2026-07-19',           // konec baznega bloka (brez tekme)
   targetPace: '3:59',
-  goal: 'F1→F2→F3→F4: recovery, baza, specifičnost, peak speed. Cilj: sub-20 5K + sub-40 10K PB poskusi v F4 (jul-avg).',
+  goal: 'Bazni blok pred LJ Maratonom (F1→F3 + uvod v F4): recovery po Istrskem, aerobna baza, specifičnost, uvod v hitrost. 10 tednov (11.5.→19.7.). Nadaljuje se v tabu "LJ Maraton (21km)".',
   deloadEvery: 4,
   raceStrategy: {
     pacing: [
@@ -257,41 +258,10 @@ export const bazaPbPlan: TrainingPlan = generatePlan({
 });
 
 // ============================================================
-// Plan 2: LJ Maraton HM (B-race) — F5a + F5b-LJ
-// 10.8.2026 → 25.10.2026, 11 tednov, race 25.10.2026
-// ============================================================
-
-export const ljHmPlan: TrainingPlan = generatePlan({
-  id: 'lj-hm-2026',
-  name: 'LJ Maraton HM (B-race)',
-  startDate: '2026-08-10',
-  totalWeeks: 11,
-  raceDate: '2026-10-25',
-  raceLocation: 'Ljubljana',
-  raceUrl: 'https://www.ljubljanskimaraton.si/',
-  targetPace: '4:18',
-  goal: 'F5a HM build + F5b-LJ taper. Cilj: 1:30:30-1:31:30 controlled execution (B-race). Save peak za Palmanova.',
-  raceLabel: 'LJ Maraton HM (B-race)',
-  deloadEvery: 4,
-  taperWeeks: 1,
-  raceStrategy: {
-    pacing: [
-      { section: 'Km 1-5', instruction: '4:20/km (rahlo počasneje od target). Settle, ne pohitri.' },
-      { section: 'Km 5-15', instruction: 'Target 4:18/km. Konstantno, "controlled".' },
-      { section: 'Km 15-21', instruction: 'Če dobro: pospeši na 4:15/km. Cilj: ne kopati v rezerve - Palmanova čez 5 tednov.' },
-    ],
-    nutrition: [
-      { when: 'Dan prej', what: 'Carb-load (testenine, riž), 3 L vode. Brez vlaknin in eksperimentov.' },
-      { when: 'Zajtrk', what: '3 h pred startom. Ovsena kaša + banana + kava (kar poznaš).' },
-      { when: 'Med tekmo', what: 'Gel pri km 8 in 14. Voda na vsakem postaji.' },
-      { when: 'Po tekmi', what: 'Recovery protokol — 24-48 h easy, naslednji teden full deload pred F5c re-build.' },
-    ],
-  },
-});
-
-// ============================================================
-// Plan 3: Palmanova HM (A-race, sub-1:30)
+// Plan 2: Palmanova HM (2. A-race)
 // 26.10.2026 → 29.11.2026, 5 tednov, race 29.11.2026
+// Opomba: glavni cilj sezone je LJ polmaraton (18.10.), glej ljMaratonPlan.
+//         Palmanova ostane kot druga tekma po LJ.
 // ============================================================
 
 export const palmanovaPlan: TrainingPlan = generatePlan({
@@ -320,4 +290,4 @@ export const palmanovaPlan: TrainingPlan = generatePlan({
   },
 });
 
-export const futurePlans: TrainingPlan[] = [bazaPbPlan, ljHmPlan, palmanovaPlan];
+export const futurePlans: TrainingPlan[] = [bazaPbPlan, palmanovaPlan];

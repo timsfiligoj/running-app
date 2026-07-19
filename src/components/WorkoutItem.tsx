@@ -12,8 +12,6 @@ import {
 } from '../types';
 import { fetchStravaData } from '../lib/strava';
 import { AnalysisModal } from './AnalysisModal';
-import { useSuggesters } from '../lib/suggestersContext';
-import type { RunningGoal, RunningCategory } from '../lib/runningSuggester';
 
 type SessionUpdate = Omit<WorkoutProgress, 'sessionIndex'>;
 
@@ -29,38 +27,6 @@ interface WorkoutItemProps {
   planId: string;
   onUpdate: (data: SessionUpdate) => void;
   onDelete: () => void;
-}
-
-// Detect placeholder workouts from cyclePlans (e.g. "klikni Predlagaj tek")
-function detectSuggesterPlaceholder(text: string): 'run' | 'strength' | null {
-  const t = text.toLowerCase();
-  if (t.includes('predlagaj tek')) return 'run';
-  if (t.includes('predlagaj moč')) return 'strength';
-  return null;
-}
-
-// Map day.type → running suggester category
-function runTypeToCategory(t: string): RunningCategory | undefined {
-  switch (t) {
-    case 'easy': return 'easy';
-    case 'tempo': return 'tempo';
-    case 'intervals': return 'interval';
-    case 'long': return 'long';
-    case 'hills': return 'hill';
-    case 'activation': return 'easy';
-    case 'recovery': return 'recovery';
-    default: return undefined;
-  }
-}
-
-// Infer running goal from plan id + week phase
-function goalForPlan(planId: string, weekPhase: string): RunningGoal {
-  if (planId === 'baza-pb-2026') {
-    if (weekPhase.includes('F4')) return '5k_pb';
-    return 'hm_pb';
-  }
-  if (planId === 'lj-hm-2026' || planId === 'palmanova-hm-2026') return 'hm_pb';
-  return 'hm_pb';
 }
 
 const activityLabels: Record<ActivityType, string> = {
@@ -127,11 +93,9 @@ export function WorkoutItem({
   dayIndex,
   session,
   isGhost,
-  planId,
   onUpdate,
   onDelete,
 }: WorkoutItemProps) {
-  const { openRunning, openStrength } = useSuggesters();
   const [isExpanded, setIsExpanded] = useState(false);
   const [showAnalysis, setShowAnalysis] = useState(false);
 
@@ -361,53 +325,6 @@ export function WorkoutItem({
         <p className={`text-sm mt-2 ml-9 ${localData.skipped ? 'text-red-400 line-through' : 'text-gray-700'}`}>
           {displayedWorkout}
         </p>
-        {(() => {
-          // Resolve suggester kind: user's explicit activityType wins over text placeholder.
-          // This way changing activityType to "Moč" flips the button to "Predlagaj moč"
-          // even if the placeholder text still says "Predlagaj tek".
-          const activity = localData.activityType;
-          const kind: 'run' | 'strength' | null =
-            activity === 'strength' ? 'strength'
-            : activity === 'run' ? 'run'
-            : activity === 'rest' || activity === 'bike' || activity === 'other' ? null
-            : detectSuggesterPlaceholder(day.workout);
-          // Only hide if user wrote a non-placeholder actualWorkout (suggestion accept
-          // writes "[Predlog] …" which is allowed to stay visible until completed).
-          const hasManualActual = !!localData.actualWorkout && !localData.actualWorkout.startsWith('[Predlog]');
-          if (!kind || hasManualActual || localData.completed || localData.skipped) return null;
-          const dayIso = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-          const handleClick = (e: React.MouseEvent) => {
-            e.stopPropagation();
-            if (kind === 'run') {
-              openRunning({
-                date: dayIso,
-                goal: goalForPlan(planId, weekPhase),
-                category: runTypeToCategory(day.type),
-                planId,
-                weekNum: weekNumber,
-                dayIndex,
-              });
-            } else {
-              openStrength({
-                date: dayIso,
-                planId,
-                weekNum: weekNumber,
-                dayIndex,
-              });
-            }
-          };
-          const labelColor = kind === 'run'
-            ? 'text-cyan-700 bg-cyan-50 hover:bg-cyan-100 border-cyan-200'
-            : 'text-pink-700 bg-pink-50 hover:bg-pink-100 border-pink-200';
-          return (
-            <button
-              onClick={handleClick}
-              className={`mt-2 ml-9 inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium border rounded-lg transition-colors ${labelColor}`}
-            >
-              🎯 Predlagaj {kind === 'run' ? 'tek' : 'moč'}
-            </button>
-          );
-        })()}
         {localData.skipped && (
           <p className="text-xs text-red-500 mt-1 ml-9 font-medium">Izpuščeno</p>
         )}

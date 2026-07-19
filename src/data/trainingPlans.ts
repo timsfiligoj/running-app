@@ -318,13 +318,14 @@ export const tekTrojkPlan: TrainingPlan = {
   }
 };
 
-import { bazaPbPlan, ljHmPlan, palmanovaPlan } from './cyclePlans';
+import { bazaPbPlan, palmanovaPlan } from './cyclePlans';
+import { ljMaratonPlan } from './ljMaratonPlan';
 
-// Order: future plans first (current focus), then historical
+// Order: current focus first, then later races, then historical
 export const trainingPlans: TrainingPlan[] = [
-  bazaPbPlan,
-  ljHmPlan,
-  palmanovaPlan,
-  tekTrojkPlan,
-  istrskiPlan,
+  ljMaratonPlan,   // A-race: LJ polmaraton 18.10.2026, sub-1:30 (glavni cilj sezone)
+  bazaPbPlan,      // "LJ Baza" — bazni blok (pomlad/poletje 2026)
+  palmanovaPlan,   // 2. A-race: Palmanova HM 29.11.2026
+  tekTrojkPlan,    // zgodovina
+  istrskiPlan,     // zgodovina
 ];
