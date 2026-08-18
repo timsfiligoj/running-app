@@ -4,6 +4,7 @@ import { ProgressData, WorkoutProgress, dayKey } from './types';
 import { Header } from './components/Header';
 import { ProgressBar } from './components/ProgressBar';
 import { WeekAccordion } from './components/WeekAccordion';
+import { FormAnalysis } from './components/FormAnalysis';
 import { supabase } from './lib/supabase';
 
 interface DbRow {
@@ -25,6 +26,14 @@ interface DbRow {
 }
 
 const ACTIVE_PLAN_KEY = 'activePlanId';
+
+type View = 'plan' | 'form';
+
+/** The form-analysis page is addressable as #forma so it can be bookmarked. */
+function viewFromHash(): View {
+  if (typeof window === 'undefined') return 'plan';
+  return window.location.hash.replace('#', '') === 'forma' ? 'form' : 'plan';
+}
 const DEFAULT_PLAN_ID = trainingPlans[0].id;
 
 function App() {
@@ -33,6 +42,7 @@ function App() {
     if (saved && trainingPlans.some(p => p.id === saved)) return saved;
     return DEFAULT_PLAN_ID;
   });
+  const [view, setView] = useState<View>(viewFromHash);
   const [progressByPlan, setProgressByPlan] = useState<Record<string, ProgressData>>({});
   const [phasesByPlan, setPhasesByPlan] = useState<Record<string, Record<number, string>>>({});
   const [focusByPlan, setFocusByPlan] = useState<Record<string, Record<number, string>>>({});
@@ -50,6 +60,17 @@ function App() {
       window.localStorage.setItem(ACTIVE_PLAN_KEY, activePlanId);
     }
   }, [activePlanId]);
+
+  useEffect(() => {
+    const onHashChange = () => setView(viewFromHash());
+    window.addEventListener('hashchange', onHashChange);
+    return () => window.removeEventListener('hashchange', onHashChange);
+  }, []);
+
+  const goTo = (next: View) => {
+    setView(next);
+    window.location.hash = next === 'form' ? 'forma' : '';
+  };
 
   const dbRowToSession = (row: DbRow): WorkoutProgress => ({
     sessionIndex: row.session_index ?? 0,
@@ -351,14 +372,17 @@ function App() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50">
       <div className="max-w-4xl mx-auto px-4 py-8">
-        {/* Plan tabs */}
+        {/* Plan tabs + form analysis */}
         <div className="mb-4 flex gap-2 overflow-x-auto pb-1">
           {trainingPlans.map(plan => (
             <button
               key={plan.id}
-              onClick={() => setActivePlanId(plan.id)}
+              onClick={() => {
+                setActivePlanId(plan.id);
+                goTo('plan');
+              }}
               className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
-                plan.id === activePlanId
+                plan.id === activePlanId && view === 'plan'
                   ? 'bg-blue-600 text-white shadow'
                   : 'bg-white text-gray-600 hover:bg-blue-50 border border-gray-200'
               }`}
@@ -366,32 +390,49 @@ function App() {
               {plan.name}
             </button>
           ))}
+          <span className="w-px bg-gray-200 shrink-0 my-1" aria-hidden />
+          <button
+            onClick={() => goTo('form')}
+            className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+              view === 'form'
+                ? 'bg-gradient-to-r from-blue-600 to-green-600 text-white shadow'
+                : 'bg-white text-gray-600 hover:bg-blue-50 border border-gray-200'
+            }`}
+          >
+            📊 Analiza forme
+          </button>
         </div>
 
         {/* Header */}
         <Header plan={activePlan} syncing={syncing} />
 
-        {/* Progress Bar */}
-        <ProgressBar completed={completedWorkouts} total={totalWorkouts} totalKm={totalKm} />
+        {view === 'form' ? (
+          <FormAnalysis />
+        ) : (
+          <>
+            {/* Progress Bar */}
+            <ProgressBar completed={completedWorkouts} total={totalWorkouts} totalKm={totalKm} />
 
-        {/* Weeks Accordion */}
-        <div className="space-y-4">
-          {activePlan.weeks.map((week) => (
-            <WeekAccordion
-              key={`${activePlanId}-${week.week}`}
-              week={week}
-              progress={progress}
-              planId={activePlanId}
-              onUpdateSession={handleUpdateSession}
-              onAddSession={handleAddSession}
-              onDeleteSession={handleDeleteSession}
-              weekPhaseOverride={weekPhaseOverrides[week.week]}
-              weekFocusOverride={weekFocusOverrides[week.week]}
-              onUpdateWeekPhase={handleUpdateWeekPhase}
-              onUpdateWeekFocus={handleUpdateWeekFocus}
-            />
-          ))}
-        </div>
+            {/* Weeks Accordion */}
+            <div className="space-y-4">
+              {activePlan.weeks.map((week) => (
+                <WeekAccordion
+                  key={`${activePlanId}-${week.week}`}
+                  week={week}
+                  progress={progress}
+                  planId={activePlanId}
+                  onUpdateSession={handleUpdateSession}
+                  onAddSession={handleAddSession}
+                  onDeleteSession={handleDeleteSession}
+                  weekPhaseOverride={weekPhaseOverrides[week.week]}
+                  weekFocusOverride={weekFocusOverrides[week.week]}
+                  onUpdateWeekPhase={handleUpdateWeekPhase}
+                  onUpdateWeekFocus={handleUpdateWeekFocus}
+                />
+              ))}
+            </div>
+          </>
+        )}
 
         {/* Footer */}
         <footer className="text-center mt-12 py-8">
