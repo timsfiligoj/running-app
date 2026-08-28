@@ -18,14 +18,22 @@ import {
   rawProjection,
   workKmOf,
   MIN_WORK_KM,
+  REST_PENALTY,
+  TRAINING_TO_RACE,
+  TEST_KM,
+  TEST_TO_RACE,
+  projectTest,
+  testPaceFor,
+  LEVEL_MIN_WORK_KM,
+  HM_GPS_KM,
+  RACE_DRIFT,
   plural,
-  FAMILY_LABEL,
-  FAMILY_NOTE,
   fmtPace,
   fmtTime,
   fmtDateSlo,
   HM_KM,
   type WeekBucket,
+  type BacktestPoint,
 } from '../lib/formAnalysis';
 import { syncCurrentBlock } from '../lib/blockSync';
 
@@ -199,6 +207,78 @@ function QualityChart({ workouts, weeksToRace }: { workouts: KeyWorkout[]; weeks
   );
 }
 
+// ─── back-test chart ───────────────────────────────────────────────────────────
+
+/**
+ * The model replayed over the Istra build. The band is what it claimed his form
+ * was worth on each day; the line is the forecast it would have made for race
+ * day from there; the dashed rule is what actually happened.
+ */
+function Backtest({ points }: { points: BacktestPoint[] }) {
+  if (points.length < 2) return null;
+  const actual = points[0].actual;
+  const all = points.flatMap(b => [b.raceToday, b.predicted]).concat(actual);
+  const lo = Math.min(...all) - 60, hi = Math.max(...all) + 60;
+  const maxW = Math.max(...points.map(b => b.weeksOut));
+
+  const W = 720, H = 220, padL = 52, padB = 26, padT = 12;
+  const plotW = W - padL - 12, plotH = H - padB - padT;
+  const x = (w: number) => padL + plotW - (w / maxW) * plotW;
+  const y = (t: number) => padT + ((t - lo) / (hi - lo)) * plotH;
+  const path = (pick: (b: BacktestPoint) => number) =>
+    [...points].sort((a, b) => b.weeksOut - a.weeksOut)
+      .map((b, i) => `${i === 0 ? 'M' : 'L'}${x(b.weeksOut).toFixed(1)},${y(pick(b)).toFixed(1)}`).join(' ');
+
+  // Gridlines every two minutes across whatever range the block covers.
+  const step = 120;
+  const ticks: number[] = [];
+  for (let v = Math.ceil(lo / step) * step; v <= hi; v += step) ticks.push(v);
+
+  return (
+    <div className="overflow-x-auto">
+      <svg viewBox={`0 0 ${W} ${H}`} className="w-full min-w-[520px]" role="img"
+           aria-label="Model preverjen na pripravi za Istro">
+        {ticks.map(v => (
+          <g key={v}>
+            <line x1={padL} x2={W - 12} y1={y(v)} y2={y(v)} stroke="#f3f4f6" strokeWidth={1} />
+            <text x={padL - 6} y={y(v) + 3} textAnchor="end" fontSize={9} fill="#9ca3af">{fmtTime(v)}</text>
+          </g>
+        ))}
+        <line x1={padL} x2={W - 12} y1={y(actual)} y2={y(actual)}
+              stroke="#16a34a" strokeWidth={1.5} strokeDasharray="4 3" />
+        <text x={W - 14} y={y(actual) - 5} textAnchor="end" fontSize={10} fill="#16a34a">
+          dejansko 1:33:33
+        </text>
+
+        <path d={path(b => b.raceToday)} fill="none" stroke={ISTRA_COLOR} strokeWidth={2} opacity={0.85} />
+        <path d={path(b => b.predicted)} fill="none" stroke="#6366f1" strokeWidth={1.5}
+              strokeDasharray="3 3" opacity={0.9} />
+
+        {points.map(b => (
+          <g key={b.asOf}>
+            <circle cx={x(b.weeksOut)} cy={y(b.raceToday)} r={3.5} fill={ISTRA_COLOR}>
+              <title>{`${fmtDateSlo(b.asOf)} · ${b.weeksOut.toFixed(1)} tednov do Istre\nraven forme: ${fmtTime(b.raceToday)}\nnapoved za tekmo: ${fmtTime(b.predicted)}`}</title>
+            </circle>
+            <circle cx={x(b.weeksOut)} cy={y(b.predicted)} r={2.5} fill="#6366f1" opacity={0.8} />
+          </g>
+        ))}
+        {[10, 8, 6, 4, 2, 0].filter(t => t <= maxW).map(t => (
+          <text key={t} x={x(t)} y={H - 8} textAnchor="middle" fontSize={9} fill="#9ca3af">{t}</text>
+        ))}
+        <text x={padL} y={H - 8} fontSize={9} fill="#d1d5db">← tednov do tekme</text>
+      </svg>
+      <div className="flex gap-4 text-xs mt-2">
+        <span className="flex items-center gap-1.5">
+          <span className="w-3 h-0.5" style={{ background: ISTRA_COLOR }} /> raven forme tisti dan
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="w-3 h-0.5 bg-indigo-500" /> napoved za dan tekme
+        </span>
+      </div>
+    </div>
+  );
+}
+
 // ─── main ──────────────────────────────────────────────────────────────────────
 
 export function FormAnalysis() {
@@ -252,6 +332,18 @@ export function FormAnalysis() {
   const goalSec = 90 * 60;
   const beatsGoal = p.realisticTime < goalSec;
 
+  // How well the model did when replayed over the Istra build — the honest
+  // measure of how much the number above is worth.
+  const { backtestRmse, backtestBias, lateLevel } = useMemo(() => {
+    const errs = p.backtest.map(b => b.predicted - b.actual);
+    const late = p.backtest.filter(b => b.weeksOut <= 4);
+    return {
+      backtestRmse: errs.length ? Math.sqrt(errs.reduce((s2, e) => s2 + e * e, 0) / errs.length) : 0,
+      backtestBias: errs.length ? errs.reduce((s2, e) => s2 + e, 0) / errs.length : 0,
+      lateLevel: late.length ? late.reduce((s2, b) => s2 + b.raceToday, 0) / late.length : 0,
+    };
+  }, [p.backtest]);
+
   return (
     <div className="space-y-6">
 
@@ -301,54 +393,219 @@ export function FormAnalysis() {
           </div>
         </div>
 
+        <div className="mt-6 grid gap-3 sm:grid-cols-2">
+          <div className="bg-white/15 rounded-lg p-3.5">
+            <div className="text-[11px] uppercase tracking-wide text-white/70">Če bi tekel ta konec tedna</div>
+            <div className="text-2xl font-bold tabular-nums mt-0.5">{fmtTime(p.raceTodayTime)}</div>
+            <div className="text-[11px] text-white/70 mt-1 leading-snug">
+              Izmerjeno, ne napovedano. Ista metoda je zadnji mesec pred Istro dala {fmtTime(lateLevel)},
+              odtekel si 1:33:33.
+            </div>
+          </div>
+          <div className="bg-white/15 rounded-lg p-3.5">
+            <div className="text-[11px] uppercase tracking-wide text-white/70">Napredek v tem bloku</div>
+            <div className="text-2xl font-bold tabular-nums mt-0.5">
+              {p.trend.slope > 0 ? `−${Math.round(p.trend.slope)} s` : '0 s'}<span className="text-base font-normal"> / teden</span>
+            </div>
+            <div className="text-[11px] text-white/70 mt-1 leading-snug">
+              Naklon skozi {plural(p.trend.sessions, 'ključni trening', 'ključna treninga', 'ključne treninge', 'ključnih treningov')}.
+              Pred Istro je bil {Math.round(p.istraTrend.slope)} s/teden.
+            </div>
+          </div>
+        </div>
+
         <p className="text-sm text-white/85 mt-5 leading-relaxed">
-          Danes si na ravni <strong>{fmtTime(p.currentTime)}</strong>. Pred Istro si bil na isti točki
-          ({p.weeksToRace} tednov do tekme) na ravni <strong>{fmtTime(p.istraSamePointTime)}</strong> in
-          si nato odtekel <strong>{fmtTime(ISTRA_RESULT.timeSec)}</strong> — v zadnjih {p.weeksToRace} tednih
-          si pridobil <strong>{fmtTime(p.realisedGainSec)}</strong>. Napoved predpostavlja, da ponoviš
-          podoben zaključek bloka.
+          Prva številka je <strong>napoved</strong>: današnja raven minus {p.weeksToRace.toFixed(1)} tednov napredka po
+          tempu, ki ga ta blok kaže. Zanesljiva je toliko, kolikor drži predpostavka, da napreduješ naprej enako hitro —
+          na Istri je ista metoda za dan tekme grešila povprečno {Math.round(backtestRmse)} s.
+          Številka <strong>{fmtTime(p.raceTodayTime)}</strong> spodaj levo je trdnejša: v njej ni nobene napovedi.
         </p>
       </section>
 
-      {/* ── Family comparison ───────────────────────────────────────────── */}
+      {/* ── Scenarios ───────────────────────────────────────────────────── */}
       <Card
-        title="Kje si zdaj v primerjavi z Istro"
-        subtitle={`Vsak tip treninga ocenjen ločeno in kalibriran na Istro, ker se miks treningov med blokoma razlikuje. Primerjava je na isti točki bloka — ${p.weeksToRace} tednov do tekme.`}
+        title="Trije scenariji"
+        subtitle="Razlika med njimi ni množitelj, ampak predpostavka o tem, koliko še napreduješ v preostalih tednih."
       >
         <div className="grid gap-3 sm:grid-cols-3">
-          {p.families.map(f => (
-            <div key={f.family} className="border border-gray-200 rounded-lg p-3">
-              <div className="text-sm font-semibold text-gray-800">{FAMILY_LABEL[f.family]}</div>
-              <div className="text-xs text-gray-400 mt-0.5 mb-3 leading-snug">{FAMILY_NOTE[f.family]}</div>
-              <div className="flex items-end justify-between">
-                <div>
-                  <div className="text-[11px] text-amber-600 uppercase tracking-wide">Istra</div>
-                  <div className="text-base font-bold text-amber-600 tabular-nums">
-                    {f.istraSameTime ? fmtTime(f.istraSameTime) : '–'}
-                  </div>
-                </div>
-                <div className="text-gray-300">→</div>
-                <div className="text-right">
-                  <div className="text-[11px] text-blue-600 uppercase tracking-wide">Zdaj</div>
-                  <div className="text-base font-bold text-blue-600 tabular-nums">
-                    {f.currentTime ? fmtTime(f.currentTime) : '–'}
-                  </div>
-                </div>
+          {p.scenarios.map(sc => (
+            <div key={sc.key} className={`rounded-lg p-3.5 border ${
+              sc.key === 'realistic' ? 'border-blue-300 bg-blue-50' : 'border-gray-200'
+            }`}>
+              <div className="text-sm font-semibold text-gray-800">{sc.label}</div>
+              <div className={`text-2xl font-bold tabular-nums mt-1 ${
+                sc.key === 'realistic' ? 'text-blue-600' : 'text-gray-700'
+              }`}>{fmtTime(sc.time)}</div>
+              <div className="text-xs text-gray-500 mt-0.5">
+                {sc.gainPerWeek > 0 ? `−${Math.round(sc.gainPerWeek)} s/teden` : 'brez nadaljnjega napredka'}
               </div>
-              <div className="mt-2 pt-2 border-t border-gray-100 flex items-center justify-between text-xs">
-                <span className="text-gray-500">
-                  {plural(f.currentWorkouts.length, 'trening', 'treninga', 'treningi', 'treningov')}
-                </span>
-                <Delta sec={f.deltaSec} />
-              </div>
-              {f.currentWorkouts.length <= 1 && (
-                <div className="mt-2 text-[11px] text-amber-700 bg-amber-50 rounded px-2 py-1">
-                  Malo podatkov — ocena je manj zanesljiva
-                </div>
-              )}
+              <div className="text-[11px] text-gray-400 mt-2 leading-snug">{sc.note}</div>
             </div>
           ))}
         </div>
+        <p className="text-xs text-gray-500 mt-4 leading-relaxed">
+          Konservativni scenarij ni črnogled — pove, kaj si vreden danes, s konico in tekmovalnim dnem vred.
+          Vse hitrejše od tega si moraš še odtrenirati.
+        </p>
+      </Card>
+
+      {/* ── What each session says ──────────────────────────────────────── */}
+      <Card
+        title="Kaj pravi vsak trening"
+        subtitle={`Ponovitve dobijo pribitek za odmore (${REST_PENALTY} s/km na kilometer dolžine ponovitve), da so primerljive z zveznim tempom. Šele nato gre vse skozi isto formulo.`}
+      >
+        <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
+          <table className="w-full text-sm min-w-[640px]">
+            <thead>
+              <tr className="text-left text-xs text-gray-500 uppercase tracking-wide border-b border-gray-200">
+                <th className="py-2 font-medium">Trening</th>
+                <th className="py-2 font-medium text-right">Delovno</th>
+                <th className="py-2 font-medium text-right">Tempo</th>
+                <th className="py-2 font-medium text-right">Ekvivalent</th>
+                <th className="py-2 font-medium text-right">HR</th>
+                <th className="py-2 font-medium text-right">Drift</th>
+                <th className="py-2 font-medium text-right">Napoved</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {p.current.map(sp => (
+                <tr key={sp.workout.id} className={sp.workout.continuous ? 'bg-blue-50/40' : ''}>
+                  <td className="py-2 pr-3">
+                    <div className="text-gray-800 truncate max-w-[220px]" title={sp.workout.name}>{sp.workout.name}</div>
+                    <div className="text-[11px] text-gray-400">
+                      {fmtDateSlo(sp.workout.date)} · {sp.workout.continuous
+                        ? 'zvezno'
+                        : `${sp.workout.reps}× ${sp.workout.repKm.toFixed(1)} km`}
+                    </div>
+                  </td>
+                  <td className="py-2 text-right tabular-nums text-gray-600">{sp.workout.workKm.toFixed(1)} km</td>
+                  <td className="py-2 text-right tabular-nums text-gray-600">{fmtPace(sp.workout.workPace)}</td>
+                  <td className="py-2 text-right tabular-nums text-gray-800 font-medium">
+                    {fmtPace(sp.equivalentPace)}
+                    {sp.restPenalty > 0 && (
+                      <span className="text-[11px] text-amber-600"> +{Math.round(sp.restPenalty)}</span>
+                    )}
+                  </td>
+                  <td className="py-2 text-right tabular-nums text-gray-500">
+                    {sp.effortHr ? Math.round(sp.effortHr) : '–'}
+                  </td>
+                  <td className={`py-2 text-right tabular-nums ${
+                    sp.drift != null && sp.drift > RACE_DRIFT * 2.5 ? 'text-amber-600' : 'text-gray-400'
+                  }`}>
+                    {sp.drift != null ? sp.drift.toFixed(1) : '–'}
+                  </td>
+                  <td className="py-2 text-right tabular-nums font-semibold text-gray-800">{fmtTime(sp.time)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <p className="text-xs text-gray-500 mt-3 leading-relaxed">
+          Modro obarvane vrstice so nepretrgani teki — v oceni štejejo poldrugkrat več, ker so za polmaraton
+          najbolj povedni. <strong>Drift</strong> je porast srčnega utripa na kilometer delovnega dela: na Istri
+          si tekel {RACE_DRIFT.toFixed(2)}, kar je tekmovalno vzdržno. Bistveno višja številka pomeni, da je bil
+          tisti tempo nad tem, kar bi zdržal do 21. kilometra, ne glede na to, kaj kaže ura.
+        </p>
+      </Card>
+
+      {/* ── 15 km test ──────────────────────────────────────────────────── */}
+      <Card
+        title={`Test ${TEST_KM} km — kontrolna točka`}
+        subtitle="Najmočnejši posamični dokaz, ki ga model pozna. Tu preberi, kaj bo tvoj test pomenil, še preden ga odtečeš."
+      >
+        <p className="text-sm text-gray-600 leading-relaxed">
+          Pred Istro si tri tedne pred tekmo odtekel {TEST_KM} km na 4:22. Ta test sam zase napove
+          {' '}<strong>1:33:31</strong> — odtekel si <strong>1:33:33</strong>. Zato ima ta trening posebno
+          mesto: {TEST_KM} km je 71 % tekme, zato formuli skoraj ni treba nič ekstrapolirati in ne rabi
+          povprečenja čez mešanico treningov. Množitelj {TEST_TO_RACE} v spodnji tabeli je izmerjen prav
+          na tem enem testu.
+        </p>
+
+        <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0 mt-4">
+          <table className="w-full text-sm min-w-[420px]">
+            <thead>
+              <tr className="text-left text-xs text-gray-500 uppercase tracking-wide border-b border-gray-200">
+                <th className="py-2 font-medium">Tempo testa</th>
+                <th className="py-2 font-medium text-right">Čas {TEST_KM} km</th>
+                <th className="py-2 font-medium text-right">Napoved, če ga tečeš 6 tednov prej</th>
+                <th className="py-2 font-medium text-right">…in 3 tedne prej</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {[240, 245, 250, 255, 260, 265].map(pc => {
+                const late = projectTest(pc, 3, p.trend.slope);
+                return (
+                  <tr key={pc} className={late < goalSec ? 'bg-green-50/60' : ''}>
+                    <td className="py-2 tabular-nums text-gray-800 font-medium">{fmtPace(pc)}/km</td>
+                    <td className="py-2 text-right tabular-nums text-gray-600">{fmtTime(pc * TEST_KM)}</td>
+                    <td className="py-2 text-right tabular-nums text-gray-700">
+                      {fmtTime(projectTest(pc, 6, p.trend.slope))}
+                    </td>
+                    <td className="py-2 text-right tabular-nums font-semibold text-gray-800">{fmtTime(late)}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          {[6, 3].map(wk => {
+            const need = testPaceFor(goalSec, wk, p.trend.slope);
+            return (
+              <div key={wk} className="bg-green-50 border border-green-200 rounded-lg p-3">
+                <div className="text-xs text-green-800 uppercase tracking-wide">
+                  Test {plural(wk, 'teden', 'tedna', 'tedne', 'tednov')} pred tekmo
+                </div>
+                <div className="mt-1 text-gray-800">
+                  za sub-1:30 rabiš <strong className="tabular-nums">{fmtPace(need)}/km</strong>
+                  {' '}<span className="text-gray-500 tabular-nums">({fmtTime(need * TEST_KM)})</span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        <p className="text-xs text-gray-500 mt-4 leading-relaxed">
+          Zgodnejši test sme biti počasnejši, ker mu model prizna napredek tednov, ki so še pred njim —
+          po naklonu tega bloka, {Math.round(p.trend.slope)} s/teden. Prav zato sta <strong>dva testa vredna
+          precej več kot dvakratnik enega</strong>: ker sta identična napora, izmerita ta naklon neposredno,
+          namesto da ga model ocenjuje iz mešanice ponovitev in tempo tekov. Naklon je trenutno
+          najšibkejši del napovedi — razlika med realističnim in optimističnim scenarijem je skoraj v
+          celoti razlika v njem.
+        </p>
+      </Card>
+
+      {/* ── Back-test ───────────────────────────────────────────────────── */}
+      <Card
+        title="Preverjeno na Istri"
+        subtitle="Model pognan nazaj skozi pripravo na Istro, vsakič samo s podatki, ki so takrat že obstajali. Edini pošten način, da vemo, koliko je vreden."
+      >
+        <Backtest points={p.backtest} />
+        <div className="mt-4 grid gap-3 sm:grid-cols-2 text-sm">
+          <div className="bg-gray-50 rounded-lg p-3">
+            <div className="text-xs text-gray-500">Ocena forme zadnji mesec pred tekmo</div>
+            <div className="mt-1 text-gray-800">
+              <strong className="tabular-nums">{fmtTime(lateLevel)}</strong> proti dejanskim{' '}
+              <strong className="tabular-nums">1:33:33</strong>
+            </div>
+            <div className="text-xs text-gray-400 mt-1">Razlika {Math.abs(Math.round(lateLevel - ISTRA_RESULT.timeSec))} s.</div>
+          </div>
+          <div className="bg-gray-50 rounded-lg p-3">
+            <div className="text-xs text-gray-500">Napoved za dan tekme, z vseh točk bloka</div>
+            <div className="mt-1 text-gray-800">
+              odstopanje <strong className="tabular-nums">±{Math.round(backtestRmse)} s</strong>
+            </div>
+            <div className="text-xs text-gray-400 mt-1">
+              Brez sistematičnega nagiba ({backtestBias >= 0 ? '+' : ''}{Math.round(backtestBias)} s povprečno).
+            </div>
+          </div>
+        </div>
+        <p className="text-xs text-gray-500 mt-3 leading-relaxed">
+          Oceni <em>trenutne</em> forme se da zaupati — zadnji mesec pred Istro je zgrešila za sekunde.
+          Napoved za dan tekme je drugačna reč: ugibati mora, kaj prinesejo tedni, ki so še pred tabo,
+          in tam je razpršenost okrog dveh minut. Zato je razpon v naslovu tako širok.
+        </p>
       </Card>
 
       {/* ── Weekly volume ───────────────────────────────────────────────── */}
@@ -403,7 +660,8 @@ export function FormAnalysis() {
       >
         <QualityChart workouts={keyWorkouts} weeksToRace={p.weeksToRace} />
         <p className="text-xs text-gray-400 mt-2">
-          Modra serija leži skozi cel blok nad oranžno — na vsaki točki priprav si hitrejši kot pred Istro.
+          Ponovitvam je prištet pribitek za odmore, zato so pike med seboj primerljive. Modra serija leži
+          skozi cel blok nad oranžno — na vsaki točki priprav si hitrejši kot pred Istro.
         </p>
       </Card>
 
@@ -538,10 +796,10 @@ export function FormAnalysis() {
           <div className="flex gap-3">
             <span className="text-green-600 font-bold shrink-0">✓</span>
             <p>
-              <strong>Hitrost je izrazito boljša.</strong> Kilometrske ponovitve tečeš pod 4:00
-              ({fmtPace(pairs.find(x => x.family === 'kratke')?.lj?.workPace ?? 0)}), česar v celotnem
-              bloku za Istro ni bilo — takrat je bil najhitrejši tak trening
-              {' '}{fmtPace(pairs.find(x => x.family === 'kratke')?.istra?.workPace ?? 0)}.
+              <strong>Hitrost ni omejitev.</strong> Kilometrske ponovitve tečeš pod 4:00 — 8×1 km po
+              3:57 in 6×1 km po 3:56. Tudi po pribitku za odmore to pomeni ekvivalent okoli
+              {' '}{fmtPace((pairs.find(x => x.family === 'kratke')?.lj?.workPace ?? 0) + REST_PENALTY)}/km
+              zveznega tempa, kar je tik ob tvojem najboljšem nepretrganem teku. Strop torej ni v nogah.
             </p>
           </div>
           <div className="flex gap-3">
@@ -569,17 +827,20 @@ export function FormAnalysis() {
           <div className="flex gap-3">
             <span className="text-green-600 font-bold shrink-0">✓</span>
             <p>
-              <strong>HM tempo je stabilnejši.</strong> 5×2 km na {fmtPace(pairs.find(x => x.family === 'dolge')?.lj?.workPace ?? 0)}
-              {' '}pomeni 10 km delovnega dela — pred Istro si največ zmogel 8–9 km in za 5 s/km počasneje.
+              <strong>Kakovostnega dela je več.</strong> V tem bloku si v ključnih treningih odtekel
+              {' '}{workKmOf(keyWorkouts, 'lj').toFixed(0)} km delovnega dela proti
+              {' '}{workKmOf(keyWorkouts, 'istra').toFixed(0)} km pred Istro, in serije so daljše —
+              5×2 km pomeni 10 km delovnega dela, česar pred Istro ni bilo.
             </p>
           </div>
           <div className="flex gap-3">
             <span className="text-amber-500 font-bold shrink-0">!</span>
             <p>
-              <strong>Manjka dolg zvezni tempo.</strong> Najboljši napovednik pred Istro je bil test
-              15 km na 4:22 tri tedne pred tekmo — napovedal je 1:33:41, odtekel si 1:33:33. V tem bloku
-              je najdaljši zvezni tempo šele 5 km. Dokler tega ne ponoviš, je zgornji del razpona bolj
-              projekcija kot dokaz.
+              <strong>Dolg zvezni tempo je še krajši kot pred Istro.</strong> Takrat je bil najboljši
+              napovednik test 15 km na 4:22 tri tedne pred tekmo. V tem bloku je najdaljši nepretrgan napor
+              {' '}{p.anchor ? `${p.anchor.workout.workKm.toFixed(0)} km na ${fmtPace(p.anchor.workout.workPace)}` : '–'}
+              {' '}({p.anchor ? fmtDateSlo(p.anchor.workout.date) : '–'}). To je zdaj najtrdnejši dokaz v modelu,
+              a raztegniti ga na 21 km je večji skok, kot je bil takrat. Test 15 km bi napoved zares utrdil.
             </p>
           </div>
           <div className="flex gap-3">
@@ -593,11 +854,13 @@ export function FormAnalysis() {
         </div>
 
         <div className="mt-5 pt-4 border-t border-gray-100">
-          <h3 className="text-sm font-semibold text-gray-800 mb-2">Kaj naj naredim v naslednjih {p.weeksToRace} tednih</h3>
+          <h3 className="text-sm font-semibold text-gray-800 mb-2">Kaj naj naredim v naslednjih {Math.round(p.weeksToRace)} tednih</h3>
           <ol className="space-y-1.5 text-sm text-gray-700 list-decimal list-inside">
             <li>Napredujoč zvezni tempo: 8 km → 10 km → 12 km na 4:12–4:18, en na 10–14 dni.</li>
             <li>Dolgi teki na 26–28 km, dvakrat z zadnjimi 8–10 km na 4:15–4:20.</li>
-            <li>Test 15 km na tekmovalnem tempu 3 tedne pred LJ (okoli 27.9.) — to je kontrolna točka napovedi.</li>
+            <li>Dva testa 15 km na tekmovalnem tempu, po dogovoru — prvi okoli 6 tednov pred tekmo
+                (sredina septembra), drugi 3 tedne prej (okoli 27.9.). Isti odsek, isti pogoji, isti čas dneva,
+                sicer druge številke ne merita.</li>
             <li>Obseg zadrži na 60–70 km/teden do 3 tedne pred tekmo, potem znižaj.</li>
             <li>Ponovitve pod 4:00 ohrani, a jih ne dodajaj — hitrost ni omejitev, vzdržljivost na tempu je.</li>
           </ol>
@@ -605,35 +868,69 @@ export function FormAnalysis() {
       </Card>
 
       {/* ── Method + refresh ────────────────────────────────────────────── */}
-      <Card title="Metoda" subtitle="Da veš, od kod številke.">
-        <ul className="text-sm text-gray-600 space-y-2 leading-relaxed list-disc list-inside">
+      <Card title="Metoda" subtitle="Da veš, od kod številke — in kje se lahko motijo.">
+        <ol className="text-sm text-gray-600 space-y-2.5 leading-relaxed list-decimal list-inside marker:text-gray-400">
           <li>
-            Vsak ključni trening se razčleni na <strong>delovne odseke</strong> (odsek nad 400 m,
-            tečen pod 4:45/km); ogrevanje in odmori se izločijo.
+            Vsak ključni trening se razčleni na <strong>delovne odseke</strong> (odsek nad 400 m, tečen pod
+            4:45/km). Ogrevanje, odmori in ohlajanje odpadejo.
           </li>
           <li>
-            Delovni tempo se z Riegelovo formulo (eksponent 1.06) razširi na 21.0975 km.
+            Iz razporeda krogov se ugotovi, ali je bil delovni del <strong>nepretrgan</strong> ali
+            <strong> ponovitve z odmori</strong>. To je najpomembnejši korak in tu je stara formula padla:
+            »3-2-1km intervals« nima v naslovu črke x, zato jo je brala kot zvezni tempo in 6 km po 3:54
+            razumela, kot da bi jih tekel brez odmora.
           </li>
           <li>
-            Ker treningi niso maksimalni napori, se ta ocena <strong>kalibrira na Istro</strong>:
-            faktor je nastavljen tako, da zadnjih 8 tednov priprav za Istro napove točno 1:33:33.
-            Kalibrira se ločeno po vrsti treninga
-            ({p.families.map(f => `${FAMILY_LABEL[f.family].split(' ')[0].toLowerCase()} ${f.calibration.toFixed(3)}`).join(', ')}),
-            ker se miks treningov med blokoma razlikuje.
+            Ponovitve dobijo <strong>pribitek za odmore</strong>: {REST_PENALTY} s/km, deljeno z dolžino
+            ponovitve — {REST_PENALTY} s/km pri kilometrskih, {(REST_PENALTY / 2).toFixed(0)} pri dvokilometrskih.
+            Vrednost je izračunana iz tvojih podatkov: pribitek mora biti tak, da ponovitve in zvezni tempo
+            iz istega štirinajstdnevja pokažeta isti čas. Šele s tem 6×1 km po 3:56 pomeni isto kot 8 km
+            zvezno po 4:13 — kar tvoja treninga iz 18. in 21. avgusta tudi res kažeta.
           </li>
           <li>
-            Trenutna forma je utežena mešanica ({p.families.map(f => FAMILY_LABEL[f.family].split(' ')[0].toLowerCase()).join(' / ')}
-            {' '}= 50 / 35 / 15 %) treningov iz zadnjih 8 tednov.
+            Delovni tempo se z <strong>Riegelovo formulo</strong> (eksponent 1.06) razširi na polmaraton, in
+            sicer na {HM_GPS_KM} km — toliko namreč ura izmeri na certificirani progi. Prej je model računal z
+            uradnimi 21.0975 km, kar je napoved skrajšalo za slabo minuto.
           </li>
           <li>
-            Napoved doda napredek, ki si ga v zadnjih {p.weeksToRace} tednih dejansko pridobil pred Istro
-            ({fmtTime(p.realisedGainSec)}): konservativno pol tega, realistično ves, optimistično 1.4-kratnik.
+            Vsi treningi se združijo v <strong>eno raven forme</strong>, uteženo s kvadratom delovne razdalje
+            (dolg trening pove veliko več kot kratek), s poldrugkratnim bonusom za nepretrgane teke in s
+            starostjo (trening izpred petih tednov šteje pol). Odseki pod {LEVEL_MIN_WORK_KM} km ne štejejo —
+            Riegel jim prišteje več kot 10 % in iz njih dela nesmisel.
           </li>
           <li>
-            Kontrola modela: test 15 km na 4:22 (22.3.2026) po tej metodi napove
-            {' '}<strong>1:33:41</strong> — odtekel si 1:33:33.
+            Raven forme se pretvori v <strong>tekmovalni čas z množiteljem {TRAINING_TO_RACE}</strong>. Zakaj
+            sploh: treningi niso tekme — tečeš jih sredi tedna, na neodpočitih nogah in namenoma pod mejo.
+            Množitelj je izmerjen na Istri, kjer je zadnji mesec priprav dal {fmtTime(lateLevel)}, ti pa si
+            odtekel 1:33:33. Iz katerega koli dne tistega meseca ga izračunaš, pride enak na dve tisočinki.
           </li>
-        </ul>
+          <li>
+            Napoved za 18. oktober vzame današnjo raven in odšteje <strong>napredek za preostale tedne</strong>
+            po naklonu, ki ga ta blok že kaže ({Math.round(p.trend.slope)} s/teden skozi{' '}
+            {plural(p.trend.sessions, 'trening', 'treninga', 'treninge', 'treningov')}). Stara formula je namesto
+            tega predpostavila, da ponoviš ves napredek iz zaključka priprav na Istro — v celoti, na bistveno
+            višji izhodiščni ravni. To je bil drugi razlog za 1:27.
+          </li>
+        </ol>
+
+        <div className="mt-5 pt-4 border-t border-gray-100">
+          <h3 className="text-sm font-semibold text-gray-800 mb-2">Kje se model lahko moti</h3>
+          <ul className="text-sm text-gray-600 space-y-1.5 leading-relaxed list-disc list-inside marker:text-gray-300">
+            <li>
+              Množitelj {TRAINING_TO_RACE} stoji na <strong>eni sami tekmi</strong>. Če je bila Istra tvoj
+              posebno dober dan, je napoved pretirano optimistična.
+            </li>
+            <li>
+              Najdaljši nepretrgan napor v tem bloku je {p.anchor ? `${p.anchor.workout.workKm.toFixed(0)} km` : '–'},
+              pred Istro je bil 15 km. Raztegniti 10 km na 21 je večji skok kot raztegniti 15 — dokler ne
+              odtečeš daljšega testa, je ta del napovedi šibkejši.
+            </li>
+            <li>
+              Naklon napredka predpostavlja, da gre naprej enako hitro. Bližje kot si svojemu stropu, manj to
+              drži — in po polmaratonu aprila si mu bližje kot januarja.
+            </li>
+          </ul>
+        </div>
 
         <div className="mt-5 pt-4 border-t border-gray-100 flex items-center justify-between gap-3 flex-wrap">
           <div className="text-xs text-gray-400">

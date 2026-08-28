@@ -5,3 +5,4 @@ dist
 .vscode/
 .omc/
 week3-plan-context.json
+.cache/
