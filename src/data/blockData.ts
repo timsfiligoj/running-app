@@ -1,6 +1,6 @@
-// AUTO-GENERATED from Strava on 2026-08-28. Regenerate with scripts/gen-block-data.mjs.
+// AUTO-GENERATED from Strava on 2026-09-17. Regenerate with scripts/gen-block-data.mjs.
 // Istra block: 1.1.2026 - 12.4.2026 (race: Istrski polmaraton, 1:33:33)
-// LJ block:    1.6.2026 - 18.8.2026 (race: Ljubljanski polmaraton 18.10.2026)
+// LJ block:    1.6.2026 - 17.9.2026 (race: Ljubljanski polmaraton 18.10.2026)
 
 export interface BlockActivity {
   id: number;
@@ -41,7 +41,7 @@ export interface KeyWorkout {
 
 export const ISTRA_RACE_DATE = "2026-04-12";
 export const LJ_RACE_DATE = "2026-10-18";
-export const SNAPSHOT_DATE = "2026-08-28";
+export const SNAPSHOT_DATE = "2026-09-17";
 
 /** Istra half-marathon result: 21.0975 km in 1:33:33. */
 export const ISTRA_RESULT = { timeSec: 5613, officialKm: 21.0975, gpsKm: 21.31, avgHr: 171, maxHr: 181 };
@@ -236,6 +236,31 @@ export const LJ_ACTIVITIES_SNAPSHOT: BlockActivity[] = [
   { id: 19897128811, date: "2026-08-25", name: "3-2-1km intervals w. Rožle", type: "Run", km: 10.27, sec: 2835, elev: 14, hr: 157 },
   { id: 19918488488, date: "2026-08-27", name: "Easy + Strides", type: "Run", km: 10.01, sec: 3234, elev: 67, hr: 149 },
   { id: 19931353834, date: "2026-08-28", name: "10km HM tempo (3km WU & CD)", type: "Run", km: 16.04, sec: 4586, elev: 21, hr: 159 },
+  { id: 19945080780, date: "2026-08-29", name: "Legs & Core", type: "WeightTraining", km: 0.00, sec: 1953, elev: 0, hr: 91 },
+  { id: 19959539679, date: "2026-08-30", name: "Morning Walk", type: "Walk", km: 1.76, sec: 2402, elev: 14, hr: 70 },
+  { id: 19967848954, date: "2026-08-30", name: "Evening Run", type: "Run", km: 22.01, sec: 7036, elev: 118, hr: 147 },
+  { id: 19985861008, date: "2026-09-01", name: "Easy + Strides", type: "Run", km: 10.16, sec: 3444, elev: 70, hr: 147 },
+  { id: 20001173958, date: "2026-09-02", name: "5x1km ≈ 3:55", type: "Run", km: 10.00, sec: 3042, elev: 26, hr: 158 },
+  { id: 20017098103, date: "2026-09-03", name: "Legs & Core", type: "WeightTraining", km: 0.00, sec: 1816, elev: 0, hr: 88 },
+  { id: 20021637858, date: "2026-09-03", name: "Afternoon Run", type: "Run", km: 4.51, sec: 1526, elev: 31, hr: 149 },
+  { id: 20029612065, date: "2026-09-04", name: "Easy + 1km zbudit noge", type: "Run", km: 10.01, sec: 3312, elev: 77, hr: 151 },
+  { id: 20041686939, date: "2026-09-05", name: "Jog + Strides", type: "Run", km: 5.51, sec: 1918, elev: 8, hr: 140 },
+  { id: 20055460850, date: "2026-09-06", name: "Morning Run", type: "Run", km: 3.01, sec: 1040, elev: 7, hr: 139 },
+  { id: 20055465562, date: "2026-09-06", name: "Test run ✅", type: "Run", km: 15.01, sec: 3764, elev: 18, hr: 171 },
+  { id: 20055465554, date: "2026-09-06", name: "Morning Run", type: "Run", km: 2.01, sec: 778, elev: 4, hr: 136 },
+  { id: 20083762863, date: "2026-09-08", name: "Recovery week", type: "Run", km: 6.01, sec: 2100, elev: 48, hr: 142 },
+  { id: 20089243341, date: "2026-09-08", name: "Legs & Core easy", type: "WeightTraining", km: 0.00, sec: 1217, elev: 0, hr: 86 },
+  { id: 20098601418, date: "2026-09-09", name: "Morning Run", type: "Run", km: 8.24, sec: 2690, elev: 47, hr: 150 },
+  { id: 20102969917, date: "2026-09-09", name: "Afternoon Walk", type: "Walk", km: 0.92, sec: 1265, elev: 2, hr: 63 },
+  { id: 20118077411, date: "2026-09-10", name: "Legs & Core", type: "WeightTraining", km: 0.00, sec: 2298, elev: 0, hr: 98 },
+  { id: 20131234771, date: "2026-09-11", name: "Easy + 6x1min tempo", type: "Run", km: 10.01, sec: 3220, elev: 16, hr: 147 },
+  { id: 20140495352, date: "2026-09-12", name: "Legs & Core", type: "WeightTraining", km: 0.00, sec: 2262, elev: 0, hr: 97 },
+  { id: 20152940922, date: "2026-09-13", name: "Easy Longy Chilly 🥶", type: "Run", km: 18.01, sec: 5926, elev: 54, hr: 142 },
+  { id: 20154174870, date: "2026-09-13", name: "Morning Walk", type: "Walk", km: 1.60, sec: 2021, elev: 4, hr: 79 },
+  { id: 20168028055, date: "2026-09-14", name: "Easy + Strides", type: "Run", km: 6.01, sec: 2064, elev: 88, hr: 143 },
+  { id: 20179864088, date: "2026-09-15", name: "3x2km ~ 3:50 min/km", type: "Run", km: 12.01, sec: 3421, elev: 15, hr: 152 },
+  { id: 20195799119, date: "2026-09-16", name: "Morning Run", type: "Run", km: 10.01, sec: 3395, elev: 75, hr: 145 },
+  { id: 20202652011, date: "2026-09-16", name: "🧑‍🧒‍🧒", type: "Walk", km: 1.13, sec: 1578, elev: 14, hr: 66 },
 ];
 
 export const KEY_WORKOUTS: KeyWorkout[] = [
@@ -383,4 +408,16 @@ export const KEY_WORKOUTS: KeyWorkout[] = [
     workKm: 10.00, workSec: 2534, workPace: 253, workHr: 172,
     continuous: true, reps: 1, repKm: 10.00,
     laps: [{ km: 1.00, pace: 256, hr: 162 }, { km: 1.00, pace: 253, hr: 170 }, { km: 1.00, pace: 257, hr: 171 }, { km: 1.00, pace: 252, hr: 174 }, { km: 1.00, pace: 255, hr: 175 }, { km: 1.00, pace: 255, hr: 174 }, { km: 1.00, pace: 257, hr: 173 }, { km: 1.00, pace: 252, hr: 174 }, { km: 1.00, pace: 252, hr: 175 }, { km: 1.00, pace: 245, hr: 177 }] },
+  { id: 20001173958, date: "2026-09-02", name: "5x1km ≈ 3:55", block: "lj", totalKm: 10.00, totalSec: 3042, avgHr: 158, maxHr: 182,
+    workKm: 5.00, workSec: 1175, workPace: 235, workHr: 174,
+    continuous: false, reps: 5, repKm: 1.00,
+    laps: [{ km: 1.00, pace: 236, hr: 169 }, { km: 1.00, pace: 233, hr: 175 }, { km: 1.00, pace: 237, hr: 174 }, { km: 1.00, pace: 236, hr: 174 }, { km: 1.00, pace: 233, hr: 176 }] },
+  { id: 20055465562, date: "2026-09-06", name: "Test run ✅", block: "lj", totalKm: 15.01, totalSec: 3764, avgHr: 171, maxHr: 177,
+    workKm: 15.00, workSec: 3755, workPace: 250, workHr: 171,
+    continuous: true, reps: 1, repKm: 15.00,
+    laps: [{ km: 1.00, pace: 253, hr: 162 }, { km: 1.00, pace: 253, hr: 168 }, { km: 1.00, pace: 253, hr: 169 }, { km: 1.00, pace: 253, hr: 169 }, { km: 1.00, pace: 252, hr: 170 }, { km: 1.00, pace: 253, hr: 171 }, { km: 1.00, pace: 252, hr: 171 }, { km: 1.00, pace: 248, hr: 174 }, { km: 1.00, pace: 248, hr: 174 }, { km: 1.00, pace: 249, hr: 174 }, { km: 1.00, pace: 252, hr: 173 }, { km: 1.00, pace: 252, hr: 172 }, { km: 1.00, pace: 253, hr: 172 }, { km: 1.00, pace: 246, hr: 174 }, { km: 1.00, pace: 238, hr: 174 }] },
+  { id: 20179864088, date: "2026-09-15", name: "3x2km ~ 3:50 min/km", block: "lj", totalKm: 12.01, totalSec: 3421, avgHr: 152, maxHr: 185,
+    workKm: 6.00, workSec: 1389, workPace: 232, workHr: 175,
+    continuous: false, reps: 3, repKm: 2.00,
+    laps: [{ km: 1.00, pace: 233, hr: 168 }, { km: 1.00, pace: 228, hr: 179 }, { km: 1.00, pace: 234, hr: 172 }, { km: 1.00, pace: 233, hr: 178 }, { km: 1.00, pace: 234, hr: 173 }, { km: 1.00, pace: 227, hr: 179 }] },
 ];
