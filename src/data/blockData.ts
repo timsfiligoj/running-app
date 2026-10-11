@@ -1,4 +1,4 @@
-// AUTO-GENERATED from Strava on 2026-10-03. Regenerate with scripts/gen-block-data.mjs.
+// AUTO-GENERATED from Strava on 2026-10-11. Regenerate with scripts/gen-block-data.mjs.
 // Istra block: 1.1.2026 - 12.4.2026 (race: Istrski polmaraton, 1:33:33)
 // LJ block:    1.6.2026 - 17.9.2026 (race: Ljubljanski polmaraton 18.10.2026)
 
@@ -41,7 +41,7 @@ export interface KeyWorkout {
 
 export const ISTRA_RACE_DATE = "2026-04-12";
 export const LJ_RACE_DATE = "2026-10-18";
-export const SNAPSHOT_DATE = "2026-10-03";
+export const SNAPSHOT_DATE = "2026-10-11";
 
 /** Istra half-marathon result: 21.0975 km in 1:33:33. */
 export const ISTRA_RESULT = { timeSec: 5613, officialKm: 21.0975, gpsKm: 21.31, avgHr: 171, maxHr: 181 };
@@ -279,6 +279,10 @@ export const LJ_ACTIVITIES_SNAPSHOT: BlockActivity[] = [
   { id: 20418072792, date: "2026-10-02", name: "Easy + Strides", type: "Run", km: 10.06, sec: 3304, elev: 54, hr: 143 },
   { id: 20431333627, date: "2026-10-03", name: "Lunch Run", type: "Run", km: 2.01, sec: 699, elev: 5, hr: 135 },
   { id: 20431333672, date: "2026-10-03", name: "Test run #2 ✅", type: "Run", km: 12.01, sec: 3012, elev: 21, hr: 170 },
+  { id: 20470717152, date: "2026-10-06", name: "Easy + Strides", type: "Run", km: 8.01, sec: 2742, elev: 10, hr: 145 },
+  { id: 20503347903, date: "2026-10-08", name: "Easy + Strides", type: "Run", km: 10.01, sec: 3193, elev: 17, hr: 144 },
+  { id: 20512518669, date: "2026-10-09", name: "4x1km HM tempo / 1km easy", type: "Run", km: 10.01, sec: 2954, elev: 24, hr: 155 },
+  { id: 20538528200, date: "2026-10-11", name: "😥", type: "Run", km: 14.01, sec: 4550, elev: 32, hr: 148 },
 ];
 
 export const KEY_WORKOUTS: KeyWorkout[] = [
@@ -462,4 +466,8 @@ export const KEY_WORKOUTS: KeyWorkout[] = [
     workKm: 12.00, workSec: 3010, workPace: 251, workHr: 170,
     continuous: true, reps: 1, repKm: 12.00,
     laps: [{ km: 1.00, pace: 249, hr: 162 }, { km: 1.00, pace: 254, hr: 167 }, { km: 1.00, pace: 253, hr: 169 }, { km: 1.00, pace: 251, hr: 169 }, { km: 1.00, pace: 255, hr: 168 }, { km: 1.00, pace: 251, hr: 172 }, { km: 1.00, pace: 250, hr: 172 }, { km: 1.00, pace: 253, hr: 172 }, { km: 1.00, pace: 252, hr: 173 }, { km: 1.00, pace: 251, hr: 172 }, { km: 1.00, pace: 253, hr: 172 }, { km: 1.00, pace: 238, hr: 177 }] },
+  { id: 20512518669, date: "2026-10-09", name: "4x1km HM tempo / 1km easy", block: "lj", totalKm: 10.01, totalSec: 2954, avgHr: 155, maxHr: 174,
+    workKm: 4.00, workSec: 1018, workPace: 255, workHr: 167,
+    continuous: false, reps: 4, repKm: 1.00,
+    laps: [{ km: 1.00, pace: 256, hr: 167 }, { km: 1.00, pace: 255, hr: 167 }, { km: 1.00, pace: 254, hr: 168 }, { km: 1.00, pace: 253, hr: 168 }] },
 ];
