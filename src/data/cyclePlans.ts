@@ -271,8 +271,8 @@ export const palmanovaPlan: TrainingPlan = generatePlan({
   totalWeeks: 5,
   raceDate: '2026-11-29',
   raceLocation: 'Palmanova, Italija',
-  targetPace: '4:16',
-  goal: 'F5c re-build + F5d taper. A-race cilj: sub-1:30 HM (PB attempt). Vse moč usmerjena v ta dan.',
+  targetPace: '4:10',
+  goal: 'F5c re-build + F5d taper. A-race cilj: PB attempt 1:28:xx. Vse moč usmerjena v ta dan.',
   raceLabel: 'Palmanova HM (A-race)',
   taperWeeks: 1,
   raceStrategy: {

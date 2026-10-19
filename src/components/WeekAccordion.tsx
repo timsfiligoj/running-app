@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import {
   Week,
   ProgressData,
@@ -54,6 +54,43 @@ const buildGhostSession = (plannedType: string): WorkoutProgress => {
     runType: defaults.runType,
   };
 };
+
+// Edits a week's phase/focus locally and saves once — on Enter or blur — instead of
+// writing to the database on every keystroke. Escape discards the edit.
+function WeekTextInput({ initial, onSave, onClose, className }: {
+  initial: string;
+  onSave: (value: string) => void;
+  onClose: () => void;
+  className: string;
+}) {
+  const [draft, setDraft] = useState(initial);
+  const done = useRef(false);
+
+  const finish = (save: boolean) => {
+    if (done.current) return;
+    done.current = true;
+    const value = draft.trim();
+    if (save && value) onSave(value);
+    onClose();
+  };
+
+  return (
+    <input
+      type="text"
+      value={draft}
+      onChange={(e) => setDraft(e.target.value)}
+      onBlur={() => finish(true)}
+      onKeyDown={(e) => {
+        e.stopPropagation();
+        if (e.key === 'Enter') finish(true);
+        if (e.key === 'Escape') finish(false);
+      }}
+      onClick={(e) => e.stopPropagation()}
+      autoFocus
+      className={className}
+    />
+  );
+}
 
 export function WeekAccordion({
   week,
@@ -134,9 +171,17 @@ export function WeekAccordion({
 
   return (
     <div className={`rounded-xl shadow-md overflow-hidden mb-4 ${weekStyles[weekStatus]}`}>
-      <button
+      {/* A div, not a <button>: the phase/focus inputs live inside this header, and a
+          real button swallows their Space key presses as clicks that collapse the week. */}
+      <div
+        role="button"
+        tabIndex={0}
         onClick={() => setIsOpen(!isOpen)}
-        className={`w-full px-4 sm:px-6 py-4 transition-colors ${weekHoverStyles[weekStatus]}`}
+        onKeyDown={(e) => {
+          if (e.target !== e.currentTarget) return;
+          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setIsOpen(!isOpen); }
+        }}
+        className={`w-full px-4 sm:px-6 py-4 transition-colors cursor-pointer ${weekHoverStyles[weekStatus]}`}
       >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 flex-wrap flex-1 min-w-0">
@@ -217,14 +262,10 @@ export function WeekAccordion({
 
         <div className="mt-1 text-left">
           {editingPhase && isOpen ? (
-            <input
-              type="text"
-              value={effectivePhase}
-              onChange={(e) => onUpdateWeekPhase?.(week.week, e.target.value)}
-              onBlur={() => setEditingPhase(false)}
-              onKeyDown={(e) => { if (e.key === 'Enter') setEditingPhase(false); }}
-              onClick={(e) => e.stopPropagation()}
-              autoFocus
+            <WeekTextInput
+              initial={effectivePhase}
+              onSave={(v) => { if (v !== effectivePhase) onUpdateWeekPhase?.(week.week, v); }}
+              onClose={() => setEditingPhase(false)}
               className="w-full text-sm text-blue-600 font-medium bg-blue-50 border border-blue-200 rounded px-1.5 py-0.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
             />
           ) : (
@@ -239,14 +280,10 @@ export function WeekAccordion({
 
         <div className="mt-0.5 text-left">
           {editingFocus && isOpen ? (
-            <input
-              type="text"
-              value={effectiveFocus}
-              onChange={(e) => onUpdateWeekFocus?.(week.week, e.target.value)}
-              onBlur={() => setEditingFocus(false)}
-              onKeyDown={(e) => { if (e.key === 'Enter') setEditingFocus(false); }}
-              onClick={(e) => e.stopPropagation()}
-              autoFocus
+            <WeekTextInput
+              initial={effectiveFocus}
+              onSave={(v) => { if (v !== effectiveFocus) onUpdateWeekFocus?.(week.week, v); }}
+              onClose={() => setEditingFocus(false)}
               className="w-full text-xs text-gray-500 bg-gray-50 border border-gray-200 rounded px-1.5 py-0.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
             />
           ) : (
@@ -258,7 +295,7 @@ export function WeekAccordion({
             </div>
           )}
         </div>
-      </button>
+      </div>
 
       {isOpen && (
         <div className="px-6 pb-6 border-t border-gray-100">
