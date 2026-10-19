@@ -3,7 +3,10 @@ import {
   KeyWorkout,
   ISTRA_RACE_DATE,
   LJ_RACE_DATE,
+  PALMANOVA_RACE_DATE,
+  PALMANOVA_START,
   ISTRA_RESULT,
+  LJ_RESULT,
 } from '../data/blockData';
 
 export const HM_KM = 21.0975;
@@ -240,46 +243,86 @@ export function repCount(w: KeyWorkout): number {
   return w.reps;
 }
 
+// ─── races ─────────────────────────────────────────────────────────────────────
+
+export type Block = KeyWorkout['block'];
+
+export interface RaceDef {
+  block: Block;
+  name: string;
+  date: string;
+  /** Official finishing time; null while the race is still ahead. */
+  timeSec: number | null;
+  avgHr: number | null;
+  /** The race's own Strava activity, kept out of the training pool. */
+  stravaId: number | null;
+  blockStart: string;
+}
+
+export const RACES: Record<Block, RaceDef> = {
+  istra: {
+    block: 'istra', name: 'Istrski polmaraton', date: ISTRA_RACE_DATE,
+    timeSec: ISTRA_RESULT.timeSec, avgHr: ISTRA_RESULT.avgHr, stravaId: 18076519859,
+    blockStart: '2026-01-01',
+  },
+  lj: {
+    block: 'lj', name: 'Ljubljanski polmaraton', date: LJ_RACE_DATE,
+    timeSec: LJ_RESULT.timeSec, avgHr: LJ_RESULT.avgHr, stravaId: LJ_RESULT.stravaId,
+    blockStart: '2026-06-01',
+  },
+  palmanova: {
+    block: 'palmanova', name: 'Palmanova HM', date: PALMANOVA_RACE_DATE,
+    timeSec: null, avgHr: null, stravaId: null, blockStart: PALMANOVA_START,
+  },
+};
+
+/** The race the page forecasts. */
+export const CURRENT: RaceDef = RACES.palmanova;
+/** The finished block it is compared against. */
+export const PREVIOUS: RaceDef = RACES.lj;
+
+const RACE_IDS = new Set(Object.values(RACES).map(r => r.stravaId).filter((id): id is number => id != null));
+export const isRace = (w: KeyWorkout) => RACE_IDS.has(w.id);
+
+/**
+ * Tek trojk (9.5.2026) is on record but deliberately not a calibration point:
+ * 20 km rather than a half, 275 m of climbing, and run four weeks after Istra
+ * with no block of its own behind it. Its pace says more about the course than
+ * about his form.
+ */
+export const TEK_TROJK = { date: '2026-05-09', km: 20.18, sec: 5647, elev: 275, avgHr: 169 };
+
 // ─── race prediction ───────────────────────────────────────────────────────────
 
 /**
- * A certified half marathon reads as ~21.31 km on his watch: tangents are never
- * run perfectly and GPS adds its own overshoot. Training paces are per GPS km, so
- * the finish time is the projected GPS pace over the distance actually recorded.
- * Ignoring this loses about 55 seconds at his level.
+ * A certified half marathon reads as ~21.3 km on his watch (Istra 21.31, LJ 21.25):
+ * tangents are never run perfectly and GPS adds its own overshoot. Training paces
+ * are per GPS km, so the finish time is the projected GPS pace over the distance
+ * actually recorded. Ignoring this loses about 55 seconds at his level.
  */
 export const HM_GPS_KM = 21.31;
 
 /**
  * Seconds per km that reps buy from their recoveries, per km of rep length —
  * 17 s/km on 1 km reps, 8.5 on 2 km, 5.7 on 3 km. Fitted by requiring that a rep
- * session and a tempo run from the same fortnight agree on the same race time;
- * across both blocks the least-squares fit lands between 17 and 21.
- *
- * It is the single most important correction in the model. Without it 6x1 km at
- * 3:56 projects to a 1:29 half marathon, and the whole prediction rests on the
- * fiction that he could hold rep pace for ninety minutes. With it, his rep
- * sessions and his tempo runs finally tell the same story: over the Ljubljana
- * block they agree to within 75 seconds, over the Istra block to within 40.
+ * session and a tempo run from the same fortnight agree on the same race time.
+ * Without it 6x1 km at 3:56 projects to a 1:29 half marathon, as if he could hold
+ * rep pace for ninety minutes.
  */
 export const REST_PENALTY = 17;
 
 /**
- * How much faster he races than his training sessions project.
+ * How much faster he races than his training sessions project: training is run
+ * on tired legs, mid-week and deliberately short of the limit, and Riegel treats
+ * each work set as if it had been maximal.
  *
- * Measured on the Istra block: over the last month before it, his sessions put
- * him at 1:37:50 and he raced 1:33:33. The gap is taper and race day, but mostly
- * it is that training sessions are not time trials — they are run on tired legs,
- * mid-week, deliberately short of the limit, and Riegel treats each work set as
- * if it had been maximal.
- *
- * The factor comes out at 0.956 no matter which date in the final month it is
- * measured on (spread under 0.002), which is what makes it usable. It is still
- * one race, so it carries the assumption that Ljubljana goes as Istra did.
+ * Fitted on Istra (0.956), then tested blind on Ljubljana: the model's last month
+ * before LJ, multiplied by the Istra factor, lands within a few seconds of the
+ * 1:29:51 he ran — with a cramp. Two races, one factor; see `calibration()`.
  */
 export const TRAINING_TO_RACE = 0.956;
 
-/** Fitness fades from view: a session six weeks old counts half of a fresh one. */
+/** Fitness fades from view: a session five weeks old counts half of a fresh one. */
 const RECENCY_HALF_LIFE_WK = 5;
 
 /**
@@ -296,10 +339,23 @@ export const LEVEL_MIN_WORK_KM = 5;
  */
 const CONTINUOUS_BONUS = 1.5;
 
-/** Heart rate he held for the whole Istra half — his demonstrated race effort. */
+/** Heart rate he held for both flat halves — his demonstrated race effort. */
 export const RACE_HR = ISTRA_RESULT.avgHr;
 
-const RACE_ID = 18076519859;
+/**
+ * Taper and recovery do not build fitness, so the forecast only credits the
+ * weeks of real training left: from the end of the post-LJ recovery week to the
+ * start of race week.
+ */
+export const TRAINING_FROM = '2026-10-26';
+export const TAPER_FROM = '2026-11-23';
+
+/**
+ * Six weeks with a recovery week, a taper, a sore ankle and a newborn are not
+ * thirteen weeks of steady build. The realistic scenario assumes half the rate
+ * of improvement the LJ block measured; the optimistic one the full rate.
+ */
+const REALISTIC_RATE_SHARE = 0.5;
 
 /** Seconds per km added to a rep session so it reads like a continuous effort. */
 export function restPenalty(w: KeyWorkout): number {
@@ -320,8 +376,8 @@ export function effortHr(w: KeyWorkout): number | null {
 
 /**
  * Heart-rate drift across the work set, in bpm per km. A race-effort half runs
- * almost flat (Istra: +5 bpm over 21 km). A steeply climbing session is being
- * held above what could be sustained to the finish, whatever the pace says.
+ * almost flat (Istra +5 bpm over 21 km, LJ +4). A steeply climbing session is
+ * being held above what could be sustained to the finish, whatever the pace says.
  */
 export function hrDrift(w: KeyWorkout): number | null {
   const laps = w.laps.filter(l => l.hr != null);
@@ -346,16 +402,30 @@ export function projectWorkout(w: KeyWorkout): number {
   return rawProjection(w) * HM_GPS_KM;
 }
 
+/**
+ * A solo time trial (the 10K test) is a maximal effort, not a training session,
+ * so it is read like a race: Riegel straight to the half, no training discount.
+ * Recognised by title, since its laps look exactly like a tempo run.
+ */
+const TIME_TRIAL_RE = /(\b10\s*k\b|10\s*km\s*test|time\s*trial|\bTT\b)/i;
+export const isTimeTrial = (w: KeyWorkout) =>
+  w.continuous && w.workKm >= 8 && w.workKm <= 11 && TIME_TRIAL_RE.test(w.name);
+
+export type EvidenceKind = 'trening' | 'test' | 'tekma';
+
 export interface SessionProjection {
   workout: KeyWorkout;
   family: Family;
+  kind: EvidenceKind;
   /** Weeks before that block's own race. */
   weeksOut: number;
   restPenalty: number;
   /** Continuous-equivalent pace of the work set, seconds per km. */
   equivalentPace: number;
-  /** Half-marathon time this session alone implies, untapered. */
+  /** Untapered training level this evidence implies (race time ÷ TRAINING_TO_RACE). */
   time: number;
+  /** Official half-marathon time this evidence implies, tapered and on race day. */
+  raceTime: number;
   effortHr: number | null;
   drift: number | null;
   weight: number;
@@ -376,7 +446,7 @@ export interface Scenario {
   key: 'conservative' | 'realistic' | 'optimistic';
   label: string;
   note: string;
-  /** Seconds of race time gained per remaining week. */
+  /** Seconds of race time gained per remaining training week. */
   gainPerWeek: number;
   time: number;
 }
@@ -391,48 +461,27 @@ export interface BacktestPoint {
   actual: number;
 }
 
-export interface Prediction {
-  sessions: SessionProjection[];
-  /** Sessions from the current block, newest first. */
-  current: SessionProjection[];
-  trend: FormTrend;
-  /** The Istra build, fitted the same way, as the reference trajectory. */
-  istraTrend: FormTrend;
-  /** Where the training says he stands today, before taper. */
-  levelNow: number;
-  /** What he would run this weekend, tapered. */
-  raceTodayTime: number;
-  scenarios: Scenario[];
-  conservativeTime: number;
-  realisticTime: number;
-  optimisticTime: number;
-  weeksToRace: number;
-  daysToRace: number;
-  /** Longest continuous effort in the current block — the most trustworthy evidence. */
-  anchor: SessionProjection | null;
-  /** Fastest rep session — a speed ceiling, not a prediction. */
-  ceiling: SessionProjection | null;
-  /** The model run against the Istra block as if the race had not happened yet. */
-  backtest: BacktestPoint[];
-  /** Continuous efforts in the current block. Below three, the trend is thin. */
-  continuousCount: number;
-}
-
 function daysBetween(a: string, b: string): number {
   return Math.round((toDate(b).getTime() - toDate(a).getTime()) / 86400000);
 }
 
-const RACE_OF: Record<'istra' | 'lj', string> = { istra: ISTRA_RACE_DATE, lj: LJ_RACE_DATE };
-
 function projectSession(w: KeyWorkout, asOf: string): SessionProjection {
   const weeksAgo = daysBetween(w.date, asOf) / 7;
+  const race = isRace(w) ? RACES[w.block] : null;
+  const kind: EvidenceKind = race ? 'tekma' : isTimeTrial(w) ? 'test' : 'trening';
+  // Races count at their official time; a time trial at its Riegel projection; a
+  // training session at its projection with the training-to-race discount.
+  const raceTime = race?.timeSec
+    ?? (kind === 'test' ? projectWorkout(w) : projectWorkout(w) * TRAINING_TO_RACE);
   return {
     workout: w,
     family: familyOf(w),
-    weeksOut: daysBetween(w.date, RACE_OF[w.block]) / 7,
+    kind,
+    weeksOut: daysBetween(w.date, RACES[w.block].date) / 7,
     restPenalty: restPenalty(w),
     equivalentPace: w.workPace + restPenalty(w),
-    time: projectWorkout(w),
+    time: raceTime / TRAINING_TO_RACE,
+    raceTime,
     effortHr: effortHr(w),
     drift: hrDrift(w),
     weight: w.workKm ** 2
@@ -442,7 +491,7 @@ function projectSession(w: KeyWorkout, asOf: string): SessionProjection {
 }
 
 /**
- * Where the block stands and how fast it is moving, from a weighted regression of
+ * Where a block stands and how fast it is moving, from a weighted regression of
  * every session's projected race time against how far out it was run. The whole
  * block votes, so the answer does not hang off whichever session went best — and
  * the slope is his own measured rate of improvement rather than a guess.
@@ -465,152 +514,216 @@ function fitTrend(list: SessionProjection[], asOf: string, raceIso: string): For
   return { slope, level, rmse, sessions: list.length, weeksLeft };
 }
 
+/** Training sessions long enough to project from, races excluded, oldest first. */
+function usable(keyWorkouts: KeyWorkout[]): KeyWorkout[] {
+  return keyWorkouts
+    .filter(w => !isRace(w) && w.workKm >= LEVEL_MIN_WORK_KM)
+    .sort((a, b) => a.date.localeCompare(b.date));
+}
+
+/** A finished block's trend as it stood on its own race morning. */
+function blockTrend(keyWorkouts: KeyWorkout[], block: Block): FormTrend {
+  const race = RACES[block];
+  const list = usable(keyWorkouts).filter(w => w.block === block && w.date < race.date)
+    .map(w => projectSession(w, race.date));
+  return fitTrend(list, race.date, race.date);
+}
+
 /**
- * Runs the model against the Istra block at each of its own session dates, using
- * only what was known by then, and compares with the 1:33:33 he actually ran. It
- * is the only honest way to say how much the number below should be trusted.
+ * Runs the model through a finished block at each of its own session dates,
+ * using only what was known by then, and compares with what he actually ran.
+ * The only honest way to say how much the forecast should be trusted.
  */
-export function backtest(keyWorkouts: KeyWorkout[]): BacktestPoint[] {
-  const pool = usable(keyWorkouts).filter(w => w.block === 'istra');
+export function backtest(keyWorkouts: KeyWorkout[], block: Block): BacktestPoint[] {
+  const race = RACES[block];
+  if (race.timeSec == null) return [];
+  const pool = usable(keyWorkouts).filter(w => w.block === block && w.date < race.date);
   const out: BacktestPoint[] = [];
   for (const at of pool) {
     const seen = pool.filter(w => w.date <= at.date);
     if (seen.length < 3) continue;
-    const weeksOut = daysBetween(at.date, ISTRA_RACE_DATE) / 7;
+    const weeksOut = daysBetween(at.date, race.date) / 7;
     if (weeksOut < 0.3) continue;
-    const t = fitTrend(seen.map(w => projectSession(w, at.date)), at.date, ISTRA_RACE_DATE);
+    const t = fitTrend(seen.map(w => projectSession(w, at.date)), at.date, race.date);
     out.push({
       asOf: at.date,
       weeksOut,
-      // What the model would have said that day, if it had run that day.
       raceToday: t.level * TRAINING_TO_RACE,
       predicted: (t.level - Math.max(0, t.slope) * weeksOut) * TRAINING_TO_RACE,
-      actual: ISTRA_RESULT.timeSec,
+      actual: race.timeSec,
     });
   }
   return out;
 }
 
-function usable(keyWorkouts: KeyWorkout[]): KeyWorkout[] {
-  return keyWorkouts
-    .filter(w => w.id !== RACE_ID && w.workKm >= LEVEL_MIN_WORK_KM)
-    .sort((a, b) => a.date.localeCompare(b.date));
+export interface Calibration {
+  race: RaceDef;
+  /** Mean "race today" over the final four weeks before the race. */
+  lateLevel: number;
+  /** Error of that late reading against the official result. Negative = model too fast. */
+  lateError: number;
+  /** Error of the full race-day forecast, root mean square over the whole block. */
+  forecastRmse: number;
+  forecastBias: number;
+  /** The training-to-race factor this race alone would have produced. */
+  impliedFactor: number;
+  points: BacktestPoint[];
+  slope: number;
+  /** Block facts for the "what training turned into" comparison. */
+  kmPerWeek: number;
+  longestKm: number;
+  /** Longest unbroken effort at tempo or faster in the block. */
+  longestContinuousKm: number;
+  /** Pace and HR of the last long continuous test before the race. */
+  lastTest: KeyWorkout | null;
 }
 
+export function calibration(
+  keyWorkouts: KeyWorkout[], block: Block, activities: BlockActivity[],
+): Calibration | null {
+  const race = RACES[block];
+  if (race.timeSec == null) return null;
+  const points = backtest(keyWorkouts, block);
+  const late = points.filter(b => b.weeksOut <= 4);
+  const lateLevel = late.length ? late.reduce((s, b) => s + b.raceToday, 0) / late.length : 0;
+  const errs = points.map(b => b.predicted - b.actual);
+  const block_ = usable(keyWorkouts).filter(w => w.block === block && w.date < race.date);
+  const continuous = block_.filter(w => w.continuous);
+  const lastTest = [...continuous].reverse().find(w => w.workKm >= 12) ?? null;
+  const s = summarise(activities.filter(a => a.date <= race.date), race.date);
+  return {
+    race,
+    lateLevel,
+    lateError: lateLevel - race.timeSec,
+    forecastRmse: errs.length ? Math.sqrt(errs.reduce((a, e) => a + e * e, 0) / errs.length) : 0,
+    forecastBias: errs.length ? errs.reduce((a, e) => a + e, 0) / errs.length : 0,
+    impliedFactor: lateLevel ? (race.timeSec / lateLevel) * TRAINING_TO_RACE : 0,
+    points,
+    slope: blockTrend(keyWorkouts, block).slope,
+    kmPerWeek: s.kmPerWeek,
+    longestKm: s.longestKm,
+    longestContinuousKm: continuous.reduce((m, w) => Math.max(m, w.workKm), 0),
+    lastTest,
+  };
+}
+
+export interface Prediction {
+  /** Every piece of evidence behind today's level, newest first, with its weight share. */
+  evidence: (SessionProjection & { share: number })[];
+  /** Sessions run in the current block so far, newest first. */
+  current: SessionProjection[];
+  /** Improvement rate the previous block measured, seconds of race time per week. */
+  previousRate: number;
+  previousSessions: number;
+  /** Where the evidence says he stands today, before taper. */
+  levelNow: number;
+  /** What he would run this weekend, tapered. */
+  raceTodayTime: number;
+  scenarios: Scenario[];
+  conservativeTime: number;
+  realisticTime: number;
+  optimisticTime: number;
+  weeksToRace: number;
+  daysToRace: number;
+  /** Weeks of real training left (recovery and taper excluded). */
+  trainingWeeksLeft: number;
+  /** Share of today's level that still rests on the previous race. */
+  raceShare: number;
+  /** The 10K test once it has been run. */
+  tenK: SessionProjection | null;
+  /** Fastest rep session of the current block — a speed ceiling, not a prediction. */
+  ceiling: SessionProjection | null;
+}
+
+/**
+ * Today's form, from everything since the LJ block began: the LJ race itself at
+ * its official time, any time trial as a race, and every training session through
+ * the calibrated discount — all weighted by length and by age. Right after LJ the
+ * race carries most of the weight; as Palmanova sessions arrive and the race ages,
+ * they take over. The forecast then adds the improvement still to come, at a
+ * share of the rate the LJ block actually measured.
+ */
 export function predict(keyWorkouts: KeyWorkout[], today: string): Prediction {
-  const pool = usable(keyWorkouts);
-  const weeksToRace = daysBetween(today, LJ_RACE_DATE) / 7;
+  const since = PREVIOUS.blockStart;
+  const pool = keyWorkouts.filter(w =>
+    w.date >= since && w.date <= today && (isRace(w) || w.workKm >= LEVEL_MIN_WORK_KM));
+  const list = pool.map(w => projectSession(w, today));
+  const W = list.reduce((s, p) => s + p.weight, 0);
+  const levelNow = W ? list.reduce((s, p) => s + p.weight * p.time, 0) / W : 0;
 
-  const sessions = pool.map(w => projectSession(w, today));
-  const current = sessions.filter(p => p.workout.block === 'lj' && p.workout.date <= today);
-  const istra = pool.filter(w => w.block === 'istra')
-    .map(w => projectSession(w, ISTRA_RACE_DATE));
+  const prevTrend = blockTrend(keyWorkouts, PREVIOUS.block);
+  const rate = Math.max(0, prevTrend.slope);
+  const trainingWeeksLeft = Math.max(0,
+    daysBetween(today > TRAINING_FROM ? today : TRAINING_FROM, TAPER_FROM) / 7);
 
-  const trend = fitTrend(current, today, LJ_RACE_DATE);
-  const istraTrend = fitTrend(istra, ISTRA_RACE_DATE, ISTRA_RACE_DATE);
-
-  const raceTodayTime = trend.level * TRAINING_TO_RACE;
-
-  // Three futures, each anchored on something observed rather than on a multiplier.
-  // Conservative: form plateaus here. Realistic: this block keeps improving at the
-  // rate it has already shown. Optimistic: it finishes the way the Istra build did.
-  const blockRate = Math.max(0, trend.slope);
-  const istraRate = Math.max(0, istraTrend.slope);
   const mk = (
     key: Scenario['key'], label: string, note: string, gainPerWeek: number,
   ): Scenario => ({
     key, label, note, gainPerWeek,
-    time: (trend.level - gainPerWeek * weeksToRace) * TRAINING_TO_RACE,
+    time: (levelNow - gainPerWeek * trainingWeeksLeft) * TRAINING_TO_RACE,
   });
-
   const scenarios: Scenario[] = [
     mk('conservative', 'Konservativno',
-       'Forma obstane na današnji ravni, pridobiš samo s konico.', 0),
+       'Forma ostane na današnji ravni — dobiš samo, kar daje konica.', 0),
     mk('realistic', 'Realistično',
-       'Napreduješ naprej s tempom, ki ga ta blok že kaže.', blockRate),
+       'Napreduješ s polovico tempa LJ bloka: kratek blok, gleženj, spanje.', rate * REALISTIC_RATE_SHARE),
     mk('optimistic', 'Optimistično',
-       'Blok se zaključi tako sunkovito kot pred Istro.', Math.max(blockRate, istraRate)),
+       'Napreduješ s polnim tempom LJ bloka v vseh preostalih tednih treninga.', rate),
   ];
 
-  const continuous = current.filter(p => p.workout.continuous);
-  const anchor = continuous.length
-    ? continuous.reduce((b, p) => (p.workout.workKm > b.workout.workKm ? p : b))
-    : null;
+  const evidence = list
+    .map(p => ({ ...p, share: W ? p.weight / W : 0 }))
+    .sort((a, b) => b.workout.date.localeCompare(a.workout.date));
+  const current = list.filter(p => p.workout.block === CURRENT.block)
+    .sort((a, b) => b.workout.date.localeCompare(a.workout.date));
   const reps = current.filter(p => !p.workout.continuous);
-  const ceiling = reps.length ? reps.reduce((b, p) => (p.time < b.time ? p : b)) : null;
 
   return {
-    sessions,
-    current: [...current].sort((a, b) => b.workout.date.localeCompare(a.workout.date)),
-    trend,
-    istraTrend,
-    levelNow: trend.level,
-    raceTodayTime,
+    evidence,
+    current,
+    previousRate: rate,
+    previousSessions: prevTrend.sessions,
+    levelNow,
+    raceTodayTime: levelNow * TRAINING_TO_RACE,
     scenarios,
     conservativeTime: scenarios[0].time,
     realisticTime: scenarios[1].time,
     optimisticTime: scenarios[2].time,
-    weeksToRace,
-    daysToRace: daysBetween(today, LJ_RACE_DATE),
-    anchor,
-    ceiling,
-    backtest: backtest(keyWorkouts),
-    continuousCount: continuous.length,
+    weeksToRace: daysBetween(today, CURRENT.date) / 7,
+    daysToRace: daysBetween(today, CURRENT.date),
+    trainingWeeksLeft,
+    raceShare: evidence.filter(p => p.kind === 'tekma').reduce((s, p) => s + p.share, 0),
+    tenK: current.find(p => p.kind === 'test') ?? null,
+    ceiling: reps.length ? reps.reduce((b, p) => (p.raceTime < b.raceTime ? p : b)) : null,
   };
 }
 
-// ─── the 15 km test ────────────────────────────────────────────────────────────
+// ─── the 10K test ──────────────────────────────────────────────────────────────
 
 /**
- * The distance of his control test. Long enough that Riegel barely has to
- * extrapolate (15 km is 71 % of the race), short enough to slot into a normal
- * training week without needing its own taper.
+ * How the plan turns the 10K test (15.11.) into a race pace. Taken as written from
+ * the Palmanova plan, which reads it off Daniels' tables and assumes the watch
+ * over-measures by ~1 % as it did at LJ. Times are watch time for 10.00 km.
  */
-export const TEST_KM = 15;
+export const TENK_BANDS = [
+  { upTo: 39 * 60 + 45, label: '≤ 39:45', official: '4:11', watch: '~4:08–4:09', expected: 88 * 60 + 20 },
+  { upTo: 40 * 60 + 15, label: '39:46–40:15', official: '4:12', watch: '~4:09–4:10', expected: 88 * 60 + 40 },
+  { upTo: 40 * 60 + 45, label: '40:16–40:45', official: '4:13', watch: '~4:10–4:11', expected: 89 * 60 },
+  { upTo: Infinity, label: '> 40:45 ali brez testa', official: '4:14, odločitev na 10 km', watch: '~4:11–4:12', expected: 89 * 60 + 20 },
+] as const;
 
-/**
- * The one clean anchor in the whole model. Three weeks before Istra he ran 15 km
- * at 4:22; that projects to 1:35:02 and he raced 1:33:33 — a ratio of 0.984,
- * accurate to two seconds.
- *
- * Unlike TRAINING_TO_RACE this needs no averaging over a session mix, which is
- * why a 15 km test is worth more than a month of ordinary sessions: it reads the
- * race almost directly. It is still a single observation.
- */
-export const TEST_TO_RACE = 0.984;
+/** Watch time for exactly 10 km of a test run, from its work pace. */
+export const tenKTime = (w: KeyWorkout) => w.workPace * 10;
 
-/** How far out that anchoring test was run, in weeks. */
-export const TEST_ANCHOR_WEEKS = 3;
-
-/**
- * What a 15 km test at this pace means for race day.
- *
- * The ratio above already contains everything the Istra test still had ahead of
- * it — three weeks of work plus the taper — so a test run earlier than that gets
- * the extra weeks credited at the block's own rate of improvement.
- */
-export function projectTest(
-  pace: number, weeksOut: number, gainPerWeek: number, km: number = TEST_KM,
-): number {
-  const raw = pace * Math.pow(HM_GPS_KM / km, RIEGEL_EXP) * HM_GPS_KM;
-  return raw * TEST_TO_RACE - Math.max(0, weeksOut - TEST_ANCHOR_WEEKS) * Math.max(0, gainPerWeek);
-}
-
-/** The test pace that would put the prediction on `target`. Seconds per km. */
-export function testPaceFor(
-  target: number, weeksOut: number, gainPerWeek: number, km: number = TEST_KM,
-): number {
-  const credit = Math.max(0, weeksOut - TEST_ANCHOR_WEEKS) * Math.max(0, gainPerWeek);
-  return (target + credit) / (TEST_TO_RACE * Math.pow(HM_GPS_KM / km, RIEGEL_EXP) * HM_GPS_KM);
-}
+export const tenKBand = (sec: number) => TENK_BANDS.find(b => sec <= b.upTo) ?? TENK_BANDS[TENK_BANDS.length - 1];
 
 // ─── matched workout pairs ─────────────────────────────────────────────────────
 
 export interface WorkoutPair {
   family: Family;
   label: string;
-  istra: KeyWorkout | null;
-  lj: KeyWorkout | null;
+  before: KeyWorkout | null;
+  now: KeyWorkout | null;
   /** Negative = faster now. Seconds per km. */
   delta: number | null;
 }
@@ -619,30 +732,30 @@ export interface WorkoutPair {
  * Best session of each family from both blocks, so like is compared with like
  * rather than comparing block averages with a different session mix.
  */
-export function matchedPairs(keyWorkouts: KeyWorkout[]): WorkoutPair[] {
-  const pool = keyWorkouts.filter(w => w.id !== RACE_ID && w.workKm >= MIN_WORK_KM);
-  const best = (block: 'istra' | 'lj', family: Family) => {
+export function matchedPairs(keyWorkouts: KeyWorkout[], before: Block, now: Block): WorkoutPair[] {
+  const pool = keyWorkouts.filter(w => !isRace(w) && w.workKm >= MIN_WORK_KM);
+  const best = (block: Block, family: Family) => {
     const list = pool.filter(w => w.block === block && familyOf(w) === family);
     if (!list.length) return null;
     return list.reduce((b, w) => (rawProjection(w) < rawProjection(b) ? w : b));
   };
 
   return (['zvezni', 'dolge', 'kratke'] as Family[]).map(family => {
-    const istra = best('istra', family);
-    const lj = best('lj', family);
+    const b = best(before, family);
+    const n = best(now, family);
     return {
       family,
       label: FAMILY_LABEL[family],
-      istra,
-      lj,
-      delta: istra && lj ? lj.workPace - istra.workPace : null,
+      before: b,
+      now: n,
+      delta: b && n ? n.workPace - b.workPace : null,
     };
   });
 }
 
 /** Hard kilometres actually run in the block's quality sessions. */
-export function workKmOf(keyWorkouts: KeyWorkout[], block: 'istra' | 'lj'): number {
+export function workKmOf(keyWorkouts: KeyWorkout[], block: Block): number {
   return keyWorkouts
-    .filter(w => w.block === block && w.id !== RACE_ID && w.workKm >= MIN_WORK_KM)
+    .filter(w => w.block === block && !isRace(w) && w.workKm >= MIN_WORK_KM)
     .reduce((s, w) => s + w.workKm, 0);
 }

@@ -97,6 +97,7 @@ export async function syncCurrentBlock(
   from: string,
   to: string,
   known: KeyWorkout[],
+  block: KeyWorkout['block'],
 ): Promise<SyncResult> {
   // Strava reads `before` as midnight of that date, so asking for "up to today"
   // silently drops everything run today — including the session that prompted
@@ -139,7 +140,7 @@ export async function syncCurrentBlock(
       id: c.id,
       date: c.date.slice(0, 10),
       name: c.name,
-      block: 'lj',
+      block,
       totalKm: Math.round(c.distanceKm * 100) / 100,
       totalSec: c.durationSeconds,
       avgHr: c.avgHeartRate ?? null,

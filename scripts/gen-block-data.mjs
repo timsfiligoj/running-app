@@ -14,7 +14,8 @@ const SUPABASE = 'https://vscticoufxoyxyhuzkeu.supabase.co/functions/v1';
 const KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZzY3RpY291ZnhveXh5aHV6a2V1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkzNTUzNDEsImV4cCI6MjA4NDkzMTM0MX0.1o0loHeC86OJ6LQ9UGeTfcedWkZIauxNsJfCMeddwiA';
 
 const ISTRA = { block: 'istra', from: '2026-01-01', to: '2026-04-13', race: '2026-04-12' };
-const LJ    = { block: 'lj',    from: '2026-06-01', to: null,         race: '2026-10-18' };
+const LJ    = { block: 'lj',    from: '2026-06-01', to: '2026-10-18', race: '2026-10-18' };
+const PALM  = { block: 'palmanova', from: '2026-10-19', to: null,   race: '2026-11-29' };
 
 /** A lap is "work" when it is a real rep, run at tempo effort or faster. */
 const MIN_WORK_LAP_M = 400;
@@ -192,6 +193,8 @@ console.error('Istra block…');
 const istra = await block(ISTRA);
 console.error('LJ block…');
 const lj = await block(LJ);
+console.error('Palmanova block…');
+const palm = await block(PALM);
 
 const snapshot = today();
 const header = fs.readFileSync('src/data/blockData.ts', 'utf-8')
@@ -203,7 +206,8 @@ fs.writeFileSync('src/data/blockData.ts',
   header +
   'export const ISTRA_ACTIVITIES: BlockActivity[] = [\n' + istra.activities.map(actSrc).join('\n') + '\n];\n\n' +
   'export const LJ_ACTIVITIES_SNAPSHOT: BlockActivity[] = [\n' + lj.activities.map(actSrc).join('\n') + '\n];\n\n' +
+  'export const PALMANOVA_ACTIVITIES_SNAPSHOT: BlockActivity[] = [\n' + palm.activities.map(actSrc).join('\n') + '\n];\n\n' +
   'export const KEY_WORKOUTS: KeyWorkout[] = [\n' +
-  [...istra.key, ...lj.key].map(keySrc).join('\n') + '\n];\n');
+  [...istra.key, ...lj.key, ...palm.key].map(keySrc).join('\n') + '\n];\n');
 
-console.error(`\nWrote src/data/blockData.ts — ${istra.activities.length} + ${lj.activities.length} activities, ${istra.key.length} + ${lj.key.length} key workouts.`);
+console.error(`\nWrote src/data/blockData.ts — ${istra.activities.length} + ${lj.activities.length} + ${palm.activities.length} activities, ${istra.key.length} + ${lj.key.length} + ${palm.key.length} key workouts.`);

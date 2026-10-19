@@ -1,6 +1,7 @@
 // AUTO-GENERATED from Strava on 2026-10-19. Regenerate with scripts/gen-block-data.mjs.
 // Istra block: 1.1.2026 - 12.4.2026 (race: Istrski polmaraton, 1:33:33)
-// LJ block:    1.6.2026 - 17.9.2026 (race: Ljubljanski polmaraton 18.10.2026)
+// LJ block:    1.6.2026 - 18.10.2026 (race: Ljubljanski polmaraton, 1:29:51)
+// Palmanova block: 19.10.2026 - (race: Palmanova HM 29.11.2026)
 
 export interface BlockActivity {
   id: number;
@@ -19,7 +20,7 @@ export interface KeyWorkout {
   id: number;
   date: string;
   name: string;
-  block: 'istra' | 'lj';
+  block: 'istra' | 'lj' | 'palmanova';
   totalKm: number;
   totalSec: number;
   avgHr: number | null;
@@ -41,10 +42,18 @@ export interface KeyWorkout {
 
 export const ISTRA_RACE_DATE = "2026-04-12";
 export const LJ_RACE_DATE = "2026-10-18";
+export const PALMANOVA_START = "2026-10-19";
+export const PALMANOVA_RACE_DATE = "2026-11-29";
 export const SNAPSHOT_DATE = "2026-10-19";
 
 /** Istra half-marathon result: 21.0975 km in 1:33:33. */
 export const ISTRA_RESULT = { timeSec: 5613, officialKm: 21.0975, gpsKm: 21.31, avgHr: 171, maxHr: 181 };
+
+/**
+ * Ljubljana half-marathon result: 21.0975 km in 1:29:51 (official). A right-calf
+ * cramp at ~18.5 km cost three short stretching stops; he estimates 30-40 s.
+ */
+export const LJ_RESULT = { timeSec: 5391, officialKm: 21.0975, gpsKm: 21.25, avgHr: 171, maxHr: 178, stravaId: 20630918025 };
 
 export const ISTRA_ACTIVITIES: BlockActivity[] = [
   { id: 16901437802, date: "2026-01-01", name: "Happy New Year 🥳🥂", type: "Run", km: 11.21, sec: 3649, elev: 71, hr: 155 },
@@ -290,6 +299,10 @@ export const LJ_ACTIVITIES_SNAPSHOT: BlockActivity[] = [
   { id: 20618471768, date: "2026-10-17", name: "Vanilla Shakeout", type: "Run", km: 4.20, sec: 1419, elev: 8, hr: 141 },
   { id: 20630917886, date: "2026-10-18", name: "Morning Run", type: "Run", km: 1.97, sec: 806, elev: 0, hr: 127 },
   { id: 20630918025, date: "2026-10-18", name: "30. Ljubljanski maraton", type: "Run", km: 21.25, sec: 5378, elev: 50, hr: 171 },
+];
+
+export const PALMANOVA_ACTIVITIES_SNAPSHOT: BlockActivity[] = [
+
 ];
 
 export const KEY_WORKOUTS: KeyWorkout[] = [
