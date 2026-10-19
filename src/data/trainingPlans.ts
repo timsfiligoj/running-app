@@ -318,7 +318,8 @@ export const tekTrojkPlan: TrainingPlan = {
   }
 };
 
-import { bazaPbPlan, palmanovaPlan } from './cyclePlans';
+import { bazaPbPlan } from './cyclePlans';
+import { palmanovaPlan } from './palmanovaPlan';
 import { ljMaratonPlan } from './ljMaratonPlan';
 
 // Order: current focus first, then later races, then historical

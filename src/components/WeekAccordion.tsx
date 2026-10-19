@@ -40,6 +40,7 @@ const getDefaultsFromPlannedType = (plannedType: string): { activityType: Activi
     };
   }
   if (plannedType === 'strength') return { activityType: 'strength' };
+  if (plannedType === 'bike') return { activityType: 'bike' };
   if (plannedType === 'rest') return { activityType: 'rest' };
   return { activityType: 'other' };
 };

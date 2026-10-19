@@ -257,37 +257,4 @@ export const bazaPbPlan: TrainingPlan = generatePlan({
   },
 });
 
-// ============================================================
-// Plan 2: Palmanova HM (2. A-race)
-// 26.10.2026 → 29.11.2026, 5 tednov, race 29.11.2026
-// Opomba: glavni cilj sezone je LJ polmaraton (18.10.), glej ljMaratonPlan.
-//         Palmanova ostane kot druga tekma po LJ.
-// ============================================================
-
-export const palmanovaPlan: TrainingPlan = generatePlan({
-  id: 'palmanova-hm-2026',
-  name: 'Palmanova HM (A-race, sub-1:30)',
-  startDate: '2026-10-26',
-  totalWeeks: 5,
-  raceDate: '2026-11-29',
-  raceLocation: 'Palmanova, Italija',
-  targetPace: '4:10',
-  goal: 'F5c re-build + F5d taper. A-race cilj: PB attempt 1:28:xx. Vse moč usmerjena v ta dan.',
-  raceLabel: 'Palmanova HM (A-race)',
-  taperWeeks: 1,
-  raceStrategy: {
-    pacing: [
-      { section: 'Km 1-3', instruction: '4:18/km. Settle, ne pohitri kljub fresh občutku.' },
-      { section: 'Km 3-15', instruction: 'Target 4:16/km. Lock-in pace. Drink at each station.' },
-      { section: 'Km 15-21', instruction: 'Negative split: pospeši na 4:13/km če imaš rezervo. Push zadnje 3 km.' },
-    ],
-    nutrition: [
-      { when: 'Dan prej', what: 'Carb-load (več kot za LJ). 3 L vode + elektroliti. Zgodaj v posteljo.' },
-      { when: 'Zajtrk', what: '3 h pred startom. Standardni race breakfast (kot za LJ).' },
-      { when: 'Med tekmo', what: 'Gel pri km 7 in km 14. Caffeine gel pri km 7. Voda na vsakem postaji.' },
-      { when: 'Po tekmi', what: 'A-race opravljena. Off-season transition (2-3 tedne lahko/recovery).' },
-    ],
-  },
-});
-
-export const futurePlans: TrainingPlan[] = [bazaPbPlan, palmanovaPlan];
+export const futurePlans: TrainingPlan[] = [bazaPbPlan];
