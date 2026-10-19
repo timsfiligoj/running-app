@@ -403,8 +403,9 @@ export function projectWorkout(w: KeyWorkout): number {
 }
 
 /**
- * A solo time trial (the 10K test) is a maximal effort, not a training session,
- * so it is read like a race: Riegel straight to the half, no training discount.
+ * A solo time trial is a maximal effort, not a training session, so it is read
+ * like a race: Riegel straight to the half, no training discount. Without this a
+ * 10 km all-out run would pass through the training discount and read ~4 min fast.
  * Recognised by title, since its laps look exactly like a tempo run.
  */
 const TIME_TRIAL_RE = /(\b10\s*k\b|10\s*km\s*test|time\s*trial|\bTT\b)/i;
@@ -629,8 +630,6 @@ export interface Prediction {
   trainingWeeksLeft: number;
   /** Share of today's level that still rests on the previous race. */
   raceShare: number;
-  /** The 10K test once it has been run. */
-  tenK: SessionProjection | null;
   /** Fastest rep session of the current block — a speed ceiling, not a prediction. */
   ceiling: SessionProjection | null;
 }
@@ -693,29 +692,9 @@ export function predict(keyWorkouts: KeyWorkout[], today: string): Prediction {
     daysToRace: daysBetween(today, CURRENT.date),
     trainingWeeksLeft,
     raceShare: evidence.filter(p => p.kind === 'tekma').reduce((s, p) => s + p.share, 0),
-    tenK: current.find(p => p.kind === 'test') ?? null,
     ceiling: reps.length ? reps.reduce((b, p) => (p.raceTime < b.raceTime ? p : b)) : null,
   };
 }
-
-// ─── the 10K test ──────────────────────────────────────────────────────────────
-
-/**
- * How the plan turns the 10K test (15.11.) into a race pace. Taken as written from
- * the Palmanova plan, which reads it off Daniels' tables and assumes the watch
- * over-measures by ~1 % as it did at LJ. Times are watch time for 10.00 km.
- */
-export const TENK_BANDS = [
-  { upTo: 39 * 60 + 45, label: '≤ 39:45', official: '4:11', watch: '~4:08–4:09', expected: 88 * 60 + 20 },
-  { upTo: 40 * 60 + 15, label: '39:46–40:15', official: '4:12', watch: '~4:09–4:10', expected: 88 * 60 + 40 },
-  { upTo: 40 * 60 + 45, label: '40:16–40:45', official: '4:13', watch: '~4:10–4:11', expected: 89 * 60 },
-  { upTo: Infinity, label: '> 40:45 ali brez testa', official: '4:14, odločitev na 10 km', watch: '~4:11–4:12', expected: 89 * 60 + 20 },
-] as const;
-
-/** Watch time for exactly 10 km of a test run, from its work pace. */
-export const tenKTime = (w: KeyWorkout) => w.workPace * 10;
-
-export const tenKBand = (sec: number) => TENK_BANDS.find(b => sec <= b.upTo) ?? TENK_BANDS[TENK_BANDS.length - 1];
 
 // ─── matched workout pairs ─────────────────────────────────────────────────────
 

@@ -17,13 +17,10 @@ import {
   rawProjection,
   workKmOf,
   isRace,
-  tenKTime,
-  tenKBand,
   CURRENT,
   PREVIOUS,
   RACES,
   TEK_TROJK,
-  TENK_BANDS,
   TRAINING_FROM,
   TAPER_FROM,
   MIN_WORK_KM,
@@ -613,67 +610,6 @@ export function FormAnalysis() {
         </p>
       </Card>
 
-      {/* ── 10K test ────────────────────────────────────────────────────── */}
-      <Card
-        title="10K test Zapolje — 15.11."
-        subtitle="Po planu določi tekmovalni tempo za Palmanovo. Velja čas na uri za 10,00 km."
-      >
-        {p.tenK ? (() => {
-          const t = tenKTime(p.tenK.workout);
-          const band = tenKBand(t);
-          return (
-            <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 mb-4">
-              <div className="text-xs text-emerald-800 uppercase tracking-wide">
-                Test odtečen · {fmtDateSlo(p.tenK.workout.date)}
-              </div>
-              <div className="mt-1 text-gray-800">
-                <strong className="tabular-nums">{fmtTime(t)}</strong> ({fmtPace(p.tenK.workout.workPace)}/km, HR {p.tenK.workout.workHr ?? '–'})
-                {' '}→ tekmovalni tempo <strong>{band.official}</strong> uradno, na uri {band.watch}.
-              </div>
-              <div className="text-xs text-gray-500 mt-1">
-                Plan pričakuje ~{fmtTime(band.expected)}; model (Riegel) iz testa bere {fmtTime(p.tenK.raceTime)}.
-              </div>
-            </div>
-          );
-        })() : (
-          <p className="text-sm text-gray-600 mb-4 leading-relaxed">
-            Še ni odtečen. Ko ga naložiš na Stravo z »10K« ali »test« v imenu in tukaj osvežiš, se vrstica
-            spodaj obarva in test vstopi v model kot tekma. Po LJ ti model pripisuje 10K okoli
-            {' '}<strong>{fmtTime(p.raceTodayTime / Math.pow(HM_KM / 10, 1.06))}</strong> (Riegel), plan ocenjuje 40:15–40:35.
-          </p>
-        )}
-        <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
-          <table className="w-full text-sm min-w-[440px]">
-            <thead>
-              <tr className="text-left text-xs text-gray-500 uppercase tracking-wide border-b border-gray-200">
-                <th className="py-2 font-medium">10K test</th>
-                <th className="py-2 font-medium text-right">Tempo uradno</th>
-                <th className="py-2 font-medium text-right">Tempo na uri</th>
-                <th className="py-2 font-medium text-right">Pričakovani čas</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {TENK_BANDS.map(b => {
-                const hit = p.tenK && tenKBand(tenKTime(p.tenK.workout)) === b;
-                return (
-                  <tr key={b.label} className={hit ? 'bg-emerald-50 font-semibold' : ''}>
-                    <td className="py-2 tabular-nums text-gray-800">{b.label}</td>
-                    <td className="py-2 text-right tabular-nums text-gray-700">{b.official}</td>
-                    <td className="py-2 text-right tabular-nums text-gray-600">{b.watch}</td>
-                    <td className="py-2 text-right tabular-nums text-gray-800">~{fmtTime(b.expected)}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-        <p className="text-xs text-gray-500 mt-3 leading-relaxed">
-          Izvedba po planu: km 1 @ 4:00, ne hitreje; km 2–7 @ 3:57–3:59; km 8–10 vse, kar ostane. Kofeinski gel
-          15 min pred štartom, tekmovalni copati. Odpovej ali zamenjaj s 3× 3 km @ 4:05, če je gleženj nad 2/10,
-          močan veter ali dež ali po dveh slabih nočeh — Palmanova ima prednost.
-        </p>
-      </Card>
-
       {/* ── Weekly volume ───────────────────────────────────────────────── */}
       <Card
         title="Tedenski obseg"
@@ -871,7 +807,6 @@ export function FormAnalysis() {
           <ol className="space-y-1.5 text-sm text-gray-700 list-decimal list-inside">
             <li>Tor 27.10. — 5× 1 km, Pet 30.10. — 3× 3 km @ 4:10–4:12 (prvič v novih copatih).</li>
             <li>Tor 3.11. — 4× 2 km @ 3:55; <strong>Ned 8.11. — 21 km z zadnjimi 8 km @ 4:10–4:13</strong>, odločitev o copatih.</li>
-            <li><strong>Ned 15.11. — 10K test Zapolje</strong>: določi tekmovalni tempo (tabela zgoraj).</li>
             <li>Pet 20.11. — generalka 2× 4 km @ ciljni tempo v polni tekmovalni opremi.</li>
             <li>Tor 24.11. — 3× 1 km @ ciljni tempo, nato samo lahko do nedelje.</li>
           </ol>
@@ -893,7 +828,7 @@ export function FormAnalysis() {
           </li>
           <li>
             Trening se pretvori v tekmovalni čas z <strong>množiteljem {TRAINING_TO_RACE}</strong> (treningi niso
-            tekme). Izmerjen je na Istri, na LJ je zdržal na slepo. Tekma šteje s svojim uradnim časom, 10K test
+            tekme). Izmerjen je na Istri, na LJ je zdržal na slepo. Tekma šteje s svojim uradnim časom, morebiten time trial
             kot tekma (Riegel brez množitelja).
           </li>
           <li>

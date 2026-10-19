@@ -9,7 +9,7 @@ import { TrainingPlan } from '../types';
 //
 // Izhodišče: LJ 1:29:51 s krčem v desni meči pri ~18,5 km in na ~3 h spanja.
 // Cilj 1:28:30–1:28:59 (4:11–4:13/km uradno), ocena ~40 %; spodnji cilj PB pod
-// 1:29:51 (~75 %, če gleženj sodeluje). Končni tempo določi 10K test 15.11.
+// 1:29:51 (~75 %, če gleženj sodeluje). Ciljni tempo Tim določi ob koncu bloka.
 //
 // Pravila (prednost pred planom):
 //  Gleženj (bolečina 0–10) — tetiva desno (najverjetneje tibialis posterior):
@@ -112,14 +112,14 @@ export const palmanovaPlan: TrainingPlan = {
         { day: 'Čet', type: 'rest', workout: 'Počitek.' },
         { day: 'Pet', type: 'easy', workout: 'Pomemben · 6 km lahko + 4× strides.' },
         { day: 'Sob', type: 'rest', workout: 'Počitek (ali test, če je sobota boljši dan).' },
-        { day: 'Ned', type: 'test', workout: '🔑 Ključni · 10K TEST Zapolje: 3 km WU + 3× strides + 10 km + 2 km CD (~15 km). Km 1 @ 4:00, ne hitreje; km 2–7 @ 3:57–3:59; km 8–10 vse, kar ostane. Kofeinski gel 15 min pred štartom, tekmovalni copati. Velja čas na uri za 10,00 km. Odpovej / zamenjaj s 3× 3 km @ 4:05 (r 2 min) pri gležnju >2/10, močnem vetru/dežju ali dveh slabih nočeh. Rezultat → tempo za Palmanovo: ≤39:45 → 4:11 uradno (~1:28:20) · 39:46–40:15 → 4:12 (~1:28:40) · 40:16–40:45 → 4:13 (~1:29:00) · >40:45 ali brez testa → 4:14 (~1:29:20).' },
+        { day: 'Ned', type: 'test', workout: '🔑 Ključni · 10K TEST Zapolje: 3 km WU + 3× strides + 10 km + 2 km CD (~15 km). Km 1 @ 4:00, ne hitreje; km 2–7 @ 3:57–3:59; km 8–10 vse, kar ostane. Kofeinski gel 15 min pred štartom, tekmovalni copati. Velja čas na uri za 10,00 km. Odpovej / zamenjaj s 3× 3 km @ 4:05 (r 2 min) pri gležnju >2/10, močnem vetru/dežju ali dveh slabih nočeh.' },
       ],
     },
     {
       week: 5,
       title: '16. nov – 22. nov',
       phase: 'TEDEN 5: REGENERACIJA + GENERALKA',
-      focus: 'Prva dva dneva po testu samo lahko. Petek je generalka: vse, kar boš imel na tekmi. Ciljni tempo iz 10K testa. ~45 km (+5 opcijsko)',
+      focus: 'Prva dva dneva po testu samo lahko. Petek je generalka: vse, kar boš imel na tekmi. ~45 km (+5 opcijsko)',
       startDate: '2026-11-16',
       days: [
         { day: 'Pon', type: 'rest', workout: 'Počitek.' },
@@ -144,14 +144,14 @@ export const palmanovaPlan: TrainingPlan = {
         { day: 'Čet', type: 'rest', workout: 'Opcijski · 5 km lahko + 1 km @ ciljni tempo + 3× strides, ali počitek.' },
         { day: 'Pet', type: 'rest', workout: 'Počitek.' },
         { day: 'Sob', type: 'easy', workout: 'Pomemben · 4 km shakeout + 3× strides. Pica za kosilo, špageti za večerjo. Številka: Sob 14–19 h (ali prenočitev v Palmanovi).' },
-        { day: 'Ned', type: 'race', workout: '🏃 PALMANOVA HM — štart 10:00, Piazza Grande. 2 km WU + 21,1 km. Km 1–3 @ 4:15, nato ciljni tempo iz 10K testa (izhodišče 4:12 uradno → ~1:28:33). Lovi uradne table, ne ure.' },
+        { day: 'Ned', type: 'race', workout: '🏃 PALMANOVA HM — štart 10:00, Piazza Grande. 2 km WU + 21,1 km. Km 1–3 @ 4:15, nato ciljni tempo, določen ob koncu bloka (izhodišče 4:12 uradno → ~1:28:33). Lovi uradne table, ne ure.' },
       ],
     },
   ],
   raceStrategy: {
     pacing: [
       { section: 'Km 1-3', instruction: '4:15/km uradno. Pospeševanje je tvoje tveganje št. 1. Ura kaže ~2–3 s/km hitreje od uradnega tempa — lovi uradne table, ne povprečja na uri.' },
-      { section: 'Km 4-15', instruction: 'Ciljni tempo iz 10K testa (izhodišče 4:12/km uradno). Vmesni časi pri 4:12: 5 km 21:09 · 10 km 42:09 · 15 km 63:09. Proga je ravna in odprta (dvojni prehod skozi Clauiano) — poišči skupino in se v protivetru skrij za njo.' },
+      { section: 'Km 4-15', instruction: 'Ciljni tempo, določen ob koncu bloka (izhodišče 4:12/km uradno). Vmesni časi pri 4:12: 5 km 21:09 · 10 km 42:09 · 15 km 63:09. Proga je ravna in odprta (dvojni prehod skozi Clauiano) — poišči skupino in se v protivetru skrij za njo.' },
       { section: 'Km 16-21', instruction: 'Pospeši na ~4:10 samo, če so meča mirna; zadnja 2 km vse. Cilj ~1:28:33.' },
       { section: 'Če se meča oglasijo', instruction: 'Prvi trzljaj: skrajšaj korak, dvigni kadenco, sprosti stopala, ~500 m 3–5 s/km počasneje. Ustavi se šele, ko se mišica zaklene; kratek razteg kot na LJ, nato nazaj v ritem.' },
     ],
