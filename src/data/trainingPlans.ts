@@ -323,9 +323,9 @@ import { ljMaratonPlan } from './ljMaratonPlan';
 
 // Order: current focus first, then later races, then historical
 export const trainingPlans: TrainingPlan[] = [
-  ljMaratonPlan,   // A-race: LJ polmaraton 18.10.2026, sub-1:30 (glavni cilj sezone)
+  palmanovaPlan,   // A-race: Palmanova HM 29.11.2026 (trenutni fokus)
+  ljMaratonPlan,   // LJ polmaraton 18.10.2026 — 1:29:51 ✅ sub-1:30
   bazaPbPlan,      // "LJ Baza" — bazni blok (pomlad/poletje 2026)
-  palmanovaPlan,   // 2. A-race: Palmanova HM 29.11.2026
   tekTrojkPlan,    // zgodovina
   istrskiPlan,     // zgodovina
 ];

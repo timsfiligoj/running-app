@@ -1,4 +1,4 @@
-// AUTO-GENERATED from Strava on 2026-10-11. Regenerate with scripts/gen-block-data.mjs.
+// AUTO-GENERATED from Strava on 2026-10-19. Regenerate with scripts/gen-block-data.mjs.
 // Istra block: 1.1.2026 - 12.4.2026 (race: Istrski polmaraton, 1:33:33)
 // LJ block:    1.6.2026 - 17.9.2026 (race: Ljubljanski polmaraton 18.10.2026)
 
@@ -41,7 +41,7 @@ export interface KeyWorkout {
 
 export const ISTRA_RACE_DATE = "2026-04-12";
 export const LJ_RACE_DATE = "2026-10-18";
-export const SNAPSHOT_DATE = "2026-10-11";
+export const SNAPSHOT_DATE = "2026-10-19";
 
 /** Istra half-marathon result: 21.0975 km in 1:33:33. */
 export const ISTRA_RESULT = { timeSec: 5613, officialKm: 21.0975, gpsKm: 21.31, avgHr: 171, maxHr: 181 };
@@ -283,6 +283,13 @@ export const LJ_ACTIVITIES_SNAPSHOT: BlockActivity[] = [
   { id: 20503347903, date: "2026-10-08", name: "Easy + Strides", type: "Run", km: 10.01, sec: 3193, elev: 17, hr: 144 },
   { id: 20512518669, date: "2026-10-09", name: "4x1km HM tempo / 1km easy", type: "Run", km: 10.01, sec: 2954, elev: 24, hr: 155 },
   { id: 20538528200, date: "2026-10-11", name: "😥", type: "Run", km: 14.01, sec: 4550, elev: 32, hr: 148 },
+  { id: 20564578093, date: "2026-10-13", name: "3x1km", type: "Run", km: 7.01, sec: 2139, elev: 20, hr: 154 },
+  { id: 20565716383, date: "2026-10-13", name: "Prvi sprehod 💙", type: "Walk", km: 0.85, sec: 842, elev: 13, hr: 83 },
+  { id: 20583027077, date: "2026-10-14", name: "Afternoon Walk", type: "Walk", km: 2.10, sec: 2639, elev: 26, hr: 66 },
+  { id: 20593310503, date: "2026-10-15", name: "2km tempo + strides", type: "Run", km: 6.51, sec: 1948, elev: 9, hr: 156 },
+  { id: 20618471768, date: "2026-10-17", name: "Vanilla Shakeout", type: "Run", km: 4.20, sec: 1419, elev: 8, hr: 141 },
+  { id: 20630917886, date: "2026-10-18", name: "Morning Run", type: "Run", km: 1.97, sec: 806, elev: 0, hr: 127 },
+  { id: 20630918025, date: "2026-10-18", name: "30. Ljubljanski maraton", type: "Run", km: 21.25, sec: 5378, elev: 50, hr: 171 },
 ];
 
 export const KEY_WORKOUTS: KeyWorkout[] = [
@@ -470,4 +477,8 @@ export const KEY_WORKOUTS: KeyWorkout[] = [
     workKm: 4.00, workSec: 1018, workPace: 255, workHr: 167,
     continuous: false, reps: 4, repKm: 1.00,
     laps: [{ km: 1.00, pace: 256, hr: 167 }, { km: 1.00, pace: 255, hr: 167 }, { km: 1.00, pace: 254, hr: 168 }, { km: 1.00, pace: 253, hr: 168 }] },
+  { id: 20630918025, date: "2026-10-18", name: "30. Ljubljanski maraton", block: "lj", totalKm: 21.25, totalSec: 5378, avgHr: 171, maxHr: 178,
+    workKm: 21.00, workSec: 5332, workPace: 254, workHr: 171,
+    continuous: true, reps: 1, repKm: 21.00,
+    laps: [{ km: 1.00, pace: 260, hr: 167 }, { km: 1.00, pace: 253, hr: 172 }, { km: 1.00, pace: 252, hr: 173 }, { km: 1.00, pace: 253, hr: 172 }, { km: 1.00, pace: 261, hr: 171 }, { km: 1.00, pace: 258, hr: 171 }, { km: 1.00, pace: 252, hr: 170 }, { km: 1.00, pace: 252, hr: 172 }, { km: 1.00, pace: 256, hr: 171 }, { km: 1.00, pace: 254, hr: 171 }, { km: 1.00, pace: 252, hr: 171 }, { km: 1.00, pace: 251, hr: 170 }, { km: 1.00, pace: 251, hr: 170 }, { km: 1.00, pace: 253, hr: 171 }, { km: 1.00, pace: 251, hr: 171 }, { km: 1.00, pace: 247, hr: 169 }, { km: 1.00, pace: 255, hr: 170 }, { km: 1.00, pace: 249, hr: 170 }, { km: 1.00, pace: 257, hr: 171 }, { km: 1.00, pace: 255, hr: 171 }, { km: 1.00, pace: 260, hr: 172 }] },
 ];
