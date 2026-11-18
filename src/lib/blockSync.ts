@@ -25,7 +25,7 @@ const MIN_WORK_KM = 4;
 
 function toBlockActivity(a: StravaActivityItem): BlockActivity {
   return {
-    id: a.id,
+    id: String(a.id),
     date: a.date.slice(0, 10),
     name: a.name,
     type: a.type,
@@ -116,7 +116,7 @@ export async function syncCurrentBlock(
   const knownIds = new Set(known.map(w => w.id));
   const candidates = data.activities.filter(
     a => a.type === 'Run' && a.distanceKm >= 5 && a.date.slice(0, 10) <= to
-      && !knownIds.has(a.id) && QUALITY_RE.test(a.name),
+      && !knownIds.has(String(a.id)) && QUALITY_RE.test(a.name),
   );
 
   const added: KeyWorkout[] = [];
@@ -137,7 +137,7 @@ export async function syncCurrentBlock(
     const hrSec = work.filter(l => l.hr).reduce((s, l) => s + l.duration_seconds, 0);
 
     added.push({
-      id: c.id,
+      id: String(c.id),
       date: c.date.slice(0, 10),
       name: c.name,
       block,

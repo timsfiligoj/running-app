@@ -35,6 +35,9 @@ async function getAccessToken(): Promise<string> {
 
 interface StravaActivity {
   id: number;
+  // Strava moves to 64-bit ids after 1.6.2027; past 2^53 the numeric `id` loses
+  // precision in JSON.parse, so `id_str` is the one to trust.
+  id_str?: string;
   name: string;
   type: string;
   sport_type: string;
@@ -165,7 +168,7 @@ Deno.serve(async (req) => {
 
     // List mode (default): return individual activities
     const mapped = activities.map(a => ({
-      id: a.id,
+      id: a.id_str ?? String(a.id),
       name: a.name,
       type: a.type,
       date: a.start_date,

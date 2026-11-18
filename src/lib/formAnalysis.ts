@@ -255,14 +255,14 @@ export interface RaceDef {
   timeSec: number | null;
   avgHr: number | null;
   /** The race's own Strava activity, kept out of the training pool. */
-  stravaId: number | null;
+  stravaId: string | null;
   blockStart: string;
 }
 
 export const RACES: Record<Block, RaceDef> = {
   istra: {
     block: 'istra', name: 'Istrski polmaraton', date: ISTRA_RACE_DATE,
-    timeSec: ISTRA_RESULT.timeSec, avgHr: ISTRA_RESULT.avgHr, stravaId: 18076519859,
+    timeSec: ISTRA_RESULT.timeSec, avgHr: ISTRA_RESULT.avgHr, stravaId: "18076519859",
     blockStart: '2026-01-01',
   },
   lj: {
@@ -281,7 +281,7 @@ export const CURRENT: RaceDef = RACES.palmanova;
 /** The finished block it is compared against. */
 export const PREVIOUS: RaceDef = RACES.lj;
 
-const RACE_IDS = new Set(Object.values(RACES).map(r => r.stravaId).filter((id): id is number => id != null));
+const RACE_IDS = new Set(Object.values(RACES).map(r => r.stravaId).filter((id): id is string => id != null));
 export const isRace = (w: KeyWorkout) => RACE_IDS.has(w.id);
 
 /**

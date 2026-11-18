@@ -31,7 +31,8 @@ export interface StravaActivitySummary {
 }
 
 export interface StravaActivityItem {
-  id: number;
+  /** Strava activity id as a string: 64-bit ids do not fit a JS number. */
+  id: string;
   name: string;
   type: string;
   date: string;
@@ -194,9 +195,7 @@ export async function fetchStravaDataFull(stravaUrl: string): Promise<FetchStrav
  * Extract Strava activity ID from URL.
  * Returns null if URL is malformed.
  */
-export function extractStravaActivityId(url: string): number | null {
+export function extractStravaActivityId(url: string): string | null {
   const match = url.match(/strava\.com\/activities\/(\d+)/);
-  if (!match) return null;
-  const id = parseInt(match[1], 10);
-  return Number.isFinite(id) ? id : null;
+  return match ? match[1] : null;
 }

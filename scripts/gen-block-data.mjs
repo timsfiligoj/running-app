@@ -124,7 +124,7 @@ async function buildKeyWorkout(a, block) {
   const hrSec = work.filter(l => l.hr).reduce((s, l) => s + l.duration_seconds, 0);
 
   return {
-    id: a.id,
+    id: String(a.id),
     date: a.date.slice(0, 10),
     name: a.name,
     block,
@@ -157,7 +157,7 @@ async function block({ block: name, from, to, race }) {
     .sort((a, b) => a.date.localeCompare(b.date));
 
   const activities = acts.map(a => ({
-    id: a.id, date: a.date.slice(0, 10), name: a.name, type: a.type,
+    id: String(a.id), date: a.date.slice(0, 10), name: a.name, type: a.type,
     km: r2(a.distanceKm), sec: a.durationSeconds,
     elev: Math.round(a.elevationMeters), hr: a.avgHeartRate ?? null,
   }));
@@ -179,11 +179,11 @@ const lapsSrc = laps =>
   '[' + laps.map(l => `{ km: ${l.km.toFixed(2)}, pace: ${l.pace}, hr: ${l.hr ?? 'null'} }`).join(', ') + ']';
 
 const actSrc = a =>
-  `  { id: ${a.id}, date: "${a.date}", name: ${JSON.stringify(a.name)}, type: "${a.type}", ` +
+  `  { id: ${JSON.stringify(a.id)}, date: "${a.date}", name: ${JSON.stringify(a.name)}, type: "${a.type}", ` +
   `km: ${a.km.toFixed(2)}, sec: ${a.sec}, elev: ${a.elev}, hr: ${a.hr ?? 'null'} },`;
 
 const keySrc = w =>
-  `  { id: ${w.id}, date: "${w.date}", name: ${JSON.stringify(w.name)}, block: "${w.block}", ` +
+  `  { id: ${JSON.stringify(w.id)}, date: "${w.date}", name: ${JSON.stringify(w.name)}, block: "${w.block}", ` +
   `totalKm: ${w.totalKm.toFixed(2)}, totalSec: ${w.totalSec}, avgHr: ${w.avgHr ?? 'null'}, maxHr: ${w.maxHr ?? 'null'},\n` +
   `    workKm: ${w.workKm.toFixed(2)}, workSec: ${w.workSec}, workPace: ${w.workPace}, workHr: ${w.workHr ?? 'null'},\n` +
   `    continuous: ${w.continuous}, reps: ${w.reps}, repKm: ${w.repKm.toFixed(2)},\n` +

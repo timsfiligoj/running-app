@@ -22,7 +22,10 @@ interface DbRow {
   avg_heart_rate?: number;
   comment?: string;
   strava_url?: string;
-  strava_activity_id?: number;
+  // BIGINT in Postgres. PostgREST and Realtime hand it over as a JSON number,
+  // which JS rounds past 2^53, so loadProgress also selects an exact text copy.
+  strava_activity_id?: number | string | null;
+  strava_activity_id_text?: string | null;
 }
 
 const ACTIVE_PLAN_KEY = 'activePlanId';
@@ -85,7 +88,8 @@ function App() {
     avgHeartRate: row.avg_heart_rate,
     comment: row.comment,
     stravaUrl: row.strava_url,
-    stravaActivityId: row.strava_activity_id,
+    stravaActivityId: row.strava_activity_id_text
+      ?? (row.strava_activity_id != null ? String(row.strava_activity_id) : undefined),
   });
 
   const insertSession = (
@@ -103,7 +107,7 @@ function App() {
     try {
       const { data, error: dbError } = await supabase
         .from('workout_progress')
-        .select('*');
+        .select('*, strava_activity_id_text:strava_activity_id::text');
 
       if (dbError) {
         console.error('Error loading progress:', dbError);

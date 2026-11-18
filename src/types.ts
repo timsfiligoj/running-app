@@ -62,7 +62,7 @@ export interface WorkoutProgress {
   avgHeartRate?: number;
   comment?: string;
   stravaUrl?: string;
-  stravaActivityId?: number;
+  stravaActivityId?: string;
 }
 
 // Keyed by `${weekNum}-${dayIndex}`. Sessions sorted ascending by sessionIndex.
@@ -203,7 +203,7 @@ export interface RunLap {
 
 export interface Run {
   id: string;
-  strava_id: number;
+  strava_id: string;
   strava_url?: string;
   date: string;
   distance_km: number;
