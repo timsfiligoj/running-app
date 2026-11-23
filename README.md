@@ -78,7 +78,7 @@ npm run build
 ## Backend (Cloudflare)
 
 Worker `running-app-api` (https://running-app-api.emba-promocije.workers.dev) z bazo D1 `running-app`.
-Strava in Claude ključi so Worker secrets, nikoli v frontendu.
+Strava ključi so Worker secrets, nikoli v frontendu.
 
 ```bash
 cd worker
@@ -89,7 +89,7 @@ npx wrangler d1 export running-app --remote --output backup.sql   # varnostna ko
 ```
 
 Shema je v `worker/schema.sql`. Endpointi: `GET/PUT/DELETE /progress`, `GET/PUT /week-overrides`,
-`GET/PUT /analysis`, `POST /strava-activities`, `POST /fetch-strava`, `POST /analyze-run`.
+`POST /strava-activities`, `POST /fetch-strava`.
 
 ## Struktura projekta
 

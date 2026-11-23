@@ -37,18 +37,3 @@ CREATE TABLE IF NOT EXISTS week_overrides (
   updated_at TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
   PRIMARY KEY (plan_id, week_num)
 );
-
--- One row (id = 'default'); the profile is free-form, so it is kept as JSON.
-CREATE TABLE IF NOT EXISTS athlete_profile (
-  id         TEXT PRIMARY KEY,
-  profile    TEXT NOT NULL,
-  updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
-);
-
--- AI run analyses, keyed "${planId}:${week}-${dayIndex}-${sessionIndex}".
-CREATE TABLE IF NOT EXISTS analysis_cache (
-  key        TEXT PRIMARY KEY,
-  analysis   TEXT NOT NULL,
-  sources    TEXT NOT NULL,  -- JSON
-  created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
-);

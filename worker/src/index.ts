@@ -1,8 +1,6 @@
 // Cloudflare Worker backing the running app. Replaces the Supabase project:
-// the D1 tables stand in for Postgres, and the Strava / Claude routes are the
-// former edge functions (strava-activities, fetch-strava, analyze-run).
-
-import { buildAnalysisPrompt, type AthleteProfile } from './prompt';
+// the D1 tables stand in for Postgres, and the Strava routes are the former
+// edge functions (strava-activities, fetch-strava).
 
 // Minimal D1 typings, so the Worker needs no extra dependencies.
 interface D1Result<T> { results: T[] }
@@ -19,7 +17,6 @@ interface Env {
   STRAVA_CLIENT_ID: string;
   STRAVA_CLIENT_SECRET: string;
   STRAVA_REFRESH_TOKEN: string;
-  ANTHROPIC_API_KEY: string;
 }
 
 /** Browsers may only call the API from the app itself; scripts send no Origin. */
@@ -106,25 +103,6 @@ async function upsertWeekOverride(env: Env, body: Record<string, unknown>) {
     `INSERT INTO week_overrides (${cols.join(', ')}) VALUES (${cols.map(() => '?').join(', ')})
      ON CONFLICT (plan_id, week_num) DO UPDATE SET ${updates}`,
   ).bind(plan_id, week_num, ...fields.map(f => body[f]), now()).run();
-}
-
-async function getAnalysis(env: Env, key: string | null) {
-  if (!key) throw new HttpError(400, 'key is required');
-  const row = await env.DB.prepare('SELECT analysis, sources FROM analysis_cache WHERE key = ?')
-    .bind(key).first<{ analysis: string; sources: string }>();
-  return row ? { analysis: row.analysis, sources: JSON.parse(row.sources) } : null;
-}
-
-async function putAnalysis(env: Env, body: Record<string, unknown>) {
-  const { key, analysis, sources } = body;
-  if (typeof key !== 'string' || typeof analysis !== 'string') {
-    throw new HttpError(400, 'key and analysis are required');
-  }
-  await env.DB.prepare(
-    `INSERT INTO analysis_cache (key, analysis, sources, created_at) VALUES (?, ?, ?, ?)
-     ON CONFLICT (key) DO UPDATE SET analysis = excluded.analysis, sources = excluded.sources,
-       created_at = excluded.created_at`,
-  ).bind(key, analysis, JSON.stringify(sources ?? {}), now()).run();
 }
 
 // ─── Strava ────────────────────────────────────────────────────────────────────
@@ -281,93 +259,6 @@ async function fetchStrava(env: Env, body: Record<string, unknown>) {
   };
 }
 
-/** Activity summary + laps, shaped the way the analysis prompt expects. */
-async function fetchStravaForAnalysis(env: Env, activityId: string): Promise<Record<string, unknown>> {
-  const token = await getStravaAccessToken(env);
-  const headers = { Authorization: `Bearer ${token}` };
-  const [activityResp, lapsResp] = await Promise.all([
-    fetch(`https://www.strava.com/api/v3/activities/${activityId}`, { headers }),
-    fetch(`https://www.strava.com/api/v3/activities/${activityId}/laps`, { headers }).catch(() => null),
-  ]);
-  if (!activityResp.ok) throw new Error(`Strava API error: ${activityResp.status}`);
-  const a = await activityResp.json() as Record<string, number & string>;
-  const laps = lapsResp?.ok ? await lapsResp.json() as Record<string, number & string>[] : null;
-
-  return {
-    name: a.name,
-    type: a.type,
-    sport_type: a.sport_type,
-    distance_km: Math.round(a.distance / 10) / 100,
-    moving_time_seconds: a.moving_time,
-    elapsed_time_seconds: a.elapsed_time,
-    elevation_gain: Math.round(a.total_elevation_gain),
-    avg_heart_rate: a.average_heartrate ? Math.round(a.average_heartrate) : null,
-    max_heart_rate: a.max_heartrate ? Math.round(a.max_heartrate) : null,
-    avg_speed_kmh: Math.round(a.average_speed * 3.6 * 100) / 100,
-    max_speed_kmh: Math.round(a.max_speed * 3.6 * 100) / 100,
-    avg_cadence: a.average_cadence ? Math.round(a.average_cadence * 2) : null,
-    calories: a.calories,
-    suffer_score: a.suffer_score,
-    start_date: a.start_date_local,
-    description: a.description,
-    workout_type: a.workout_type,
-    laps: laps?.map(lap => ({
-      name: lap.name,
-      distance_km: Math.round(lap.distance / 10) / 100,
-      moving_time_seconds: lap.moving_time,
-      avg_heart_rate: lap.average_heartrate ? Math.round(lap.average_heartrate) : null,
-      max_heart_rate: lap.max_heartrate ? Math.round(lap.max_heartrate) : null,
-      avg_speed_kmh: Math.round(lap.average_speed * 3.6 * 100) / 100,
-      avg_cadence: lap.average_cadence ? Math.round(lap.average_cadence * 2) : null,
-      elevation_gain: Math.round(lap.total_elevation_gain),
-      pace_min_km: lap.average_speed > 0 ? Math.round(1000 / lap.average_speed / 60 * 100) / 100 : null,
-    })) ?? null,
-  };
-}
-
-// ─── Claude analysis ───────────────────────────────────────────────────────────
-
-/** Former `analyze-run` function, minus the Garmin data. */
-async function analyzeRun(env: Env, body: Record<string, unknown>) {
-  const { stravaUrl, workoutContext } = body as { stravaUrl?: string; workoutContext?: Record<string, unknown> };
-  const match = stravaUrl?.match(/activities\/(\d+)/);
-  if (!match) throw new HttpError(400, 'Za analizo je potreben Strava URL.');
-
-  let stravaData: Record<string, unknown> | null = null;
-  try {
-    stravaData = await fetchStravaForAnalysis(env, match[1]);
-  } catch (err) {
-    console.error('Strava fetch error:', err);
-  }
-  if (!stravaData) throw new HttpError(400, 'Ni bilo mogoče pridobiti podatkov iz Strave.');
-
-  const row = await env.DB.prepare("SELECT profile FROM athlete_profile WHERE id = 'default'")
-    .first<{ profile: string }>();
-  const athleteProfile: AthleteProfile | null = row ? JSON.parse(row.profile) : null;
-
-  if (!env.ANTHROPIC_API_KEY) throw new HttpError(500, 'ANTHROPIC_API_KEY ni nastavljen.');
-  const claudeResp = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': env.ANTHROPIC_API_KEY.trim(),
-      'anthropic-version': '2023-06-01',
-    },
-    body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 2000,
-      messages: [{ role: 'user', content: buildAnalysisPrompt(stravaData, workoutContext || {}, athleteProfile) }],
-    }),
-  });
-  if (!claudeResp.ok) throw new Error(`Claude API error: ${claudeResp.status} - ${await claudeResp.text()}`);
-  const claudeData = await claudeResp.json() as { content?: { text?: string }[] };
-
-  return {
-    analysis: claudeData.content?.[0]?.text || 'Analiza ni na voljo.',
-    sources: { strava: true, garmin: false, garminActivity: false, garminDailyStats: false },
-  };
-}
-
 // ─── Router ────────────────────────────────────────────────────────────────────
 
 class HttpError extends Error {
@@ -385,11 +276,8 @@ async function route(req: Request, env: Env): Promise<unknown> {
     case 'DELETE /progress': await deleteProgress(env, url); return { ok: true };
     case 'GET /week-overrides': return (await env.DB.prepare('SELECT * FROM week_overrides').all()).results;
     case 'PUT /week-overrides': await upsertWeekOverride(env, await body()); return { ok: true };
-    case 'GET /analysis': return getAnalysis(env, url.searchParams.get('key'));
-    case 'PUT /analysis': await putAnalysis(env, await body()); return { ok: true };
     case 'POST /strava-activities': return stravaActivities(env, await body());
     case 'POST /fetch-strava': return fetchStrava(env, await body());
-    case 'POST /analyze-run': return analyzeRun(env, await body());
     default: throw new HttpError(404, `Not found: ${key}`);
   }
 }

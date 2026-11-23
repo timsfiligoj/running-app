@@ -328,9 +328,6 @@ export function WeekAccordion({
                     <WorkoutItem
                       day={day}
                       weekStartDate={week.startDate}
-                      weekNumber={week.week}
-                      weekPhase={effectivePhase}
-                      weekFocus={effectiveFocus}
                       dayIndex={dayIndex}
                       session={ghost}
                       isGhost
@@ -344,9 +341,6 @@ export function WeekAccordion({
                         key={session.sessionIndex}
                         day={day}
                         weekStartDate={week.startDate}
-                        weekNumber={week.week}
-                        weekPhase={effectivePhase}
-                        weekFocus={effectiveFocus}
                         dayIndex={dayIndex}
                         session={session}
                         isGhost={false}
