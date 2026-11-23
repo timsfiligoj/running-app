@@ -1,0 +1,16 @@
+// Backend for the running app (replaces the Supabase project).
+// Secrets (set with `npx wrangler secret put <NAME>`):
+//   STRAVA_CLIENT_ID, STRAVA_CLIENT_SECRET, STRAVA_REFRESH_TOKEN, ANTHROPIC_API_KEY
+{
+  "name": "running-app-api",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-11-01",
+  "observability": { "enabled": true },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "running-app",
+      "database_id": "6abd4ada-3342-45a4-bd41-2b5cc02861e4"
+    }
+  ]
+}

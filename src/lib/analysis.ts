@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { api } from './api';
 
 export interface AnalysisResult {
   analysis: string;
@@ -26,46 +26,22 @@ export interface AnalyzeRunResult {
 }
 
 /**
- * Load cached analysis from Supabase
+ * Load a cached analysis. Keys are "${planId}:${week}-${dayIndex}-${sessionIndex}".
  */
 export async function getCachedAnalysis(workoutKey: string): Promise<AnalysisResult | null> {
-  const { data, error } = await supabase
-    .from('workout_progress')
-    .select('analysis_text, analysis_sources, analysis_at')
-    .eq('id', workoutKey)
-    .maybeSingle();
-
+  const { data, error } = await api<AnalysisResult | null>('GET', `/analysis?key=${encodeURIComponent(workoutKey)}`);
   if (error) {
     console.error('getCachedAnalysis error:', error);
     return null;
   }
-
-  if (data?.analysis_text) {
-    return {
-      analysis: data.analysis_text,
-      sources: data.analysis_sources || { strava: false, garmin: false, garminActivity: false, garminDailyStats: false },
-    };
-  }
-  return null;
+  return data;
 }
 
 /**
- * Save analysis to cache in Supabase
- * Uses upsert to handle both existing and non-existing rows
+ * Save an analysis to the cache
  */
 export async function cacheAnalysis(workoutKey: string, result: AnalysisResult): Promise<void> {
-  const { error } = await supabase
-    .from('workout_progress')
-    .upsert({
-      id: workoutKey,
-      analysis_text: result.analysis,
-      analysis_sources: result.sources,
-      analysis_at: new Date().toISOString(),
-    }, {
-      onConflict: 'id',
-      ignoreDuplicates: false,
-    });
-
+  const { error } = await api('PUT', '/analysis', { key: workoutKey, ...result });
   if (error) {
     console.error('cacheAnalysis error:', error);
   }
@@ -91,17 +67,11 @@ export async function analyzeRun(
   }
 
   try {
-    const { data, error } = await supabase.functions.invoke('analyze-run', {
-      body: { stravaUrl, date, workoutContext },
-    });
+    const { data, error } = await api<AnalysisResult>('POST', '/analyze-run', { stravaUrl, date, workoutContext });
 
     if (error) {
-      console.error('Supabase function error:', error);
-      return { data: null, error: 'Napaka pri analizi teka', cached: false };
-    }
-
-    if (data?.error) {
-      return { data: null, error: data.error, cached: false };
+      console.error('analyze-run error:', error);
+      return { data: null, error, cached: false };
     }
 
     // Cache the result

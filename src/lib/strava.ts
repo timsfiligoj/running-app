@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { api } from './api';
 import type { RunSplit, RunLap } from '../types';
 
 export interface StravaData {
@@ -62,12 +62,10 @@ export async function fetchStravaActivities(
   mode: 'summary' | 'list' = 'summary',
 ): Promise<StravaActivitiesResult> {
   try {
-    const { data, error } = await supabase.functions.invoke('strava-activities', {
-      body: { after, before, type, mode },
-    });
+    const { data, error } = await api<any>('POST', '/strava-activities', { after, before, type, mode });
 
     if (error) {
-      console.error('Supabase function error:', error);
+      console.error('strava-activities error:', error);
       return { data: null, error: 'Napaka pri pridobivanju podatkov iz Strave' };
     }
 
@@ -89,7 +87,7 @@ export interface FetchStravaResult {
 
 /**
  * Fetch workout data from a Strava activity URL
- * Uses Supabase Edge Function to bypass CORS
+ * Goes through the Worker to bypass CORS
  */
 export async function fetchStravaData(stravaUrl: string): Promise<FetchStravaResult> {
   // Validate URL format
@@ -101,12 +99,10 @@ export async function fetchStravaData(stravaUrl: string): Promise<FetchStravaRes
   }
 
   try {
-    const { data, error } = await supabase.functions.invoke('fetch-strava', {
-      body: { stravaUrl },
-    });
+    const { data, error } = await api<any>('POST', '/fetch-strava', { stravaUrl });
 
     if (error) {
-      console.error('Supabase function error:', error);
+      console.error('fetch-strava error:', error);
       return {
         data: null,
         error: 'Napaka pri pridobivanju podatkov iz Strave',
@@ -154,12 +150,10 @@ export async function fetchStravaDataFull(stravaUrl: string): Promise<FetchStrav
   }
 
   try {
-    const { data, error } = await supabase.functions.invoke('fetch-strava', {
-      body: { stravaUrl },
-    });
+    const { data, error } = await api<any>('POST', '/fetch-strava', { stravaUrl });
 
     if (error) {
-      console.error('Supabase function error:', error);
+      console.error('fetch-strava error:', error);
       return { data: null, error: 'Napaka pri pridobivanju podatkov iz Strave' };
     }
 

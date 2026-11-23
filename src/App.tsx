@@ -5,7 +5,7 @@ import { Header } from './components/Header';
 import { ProgressBar } from './components/ProgressBar';
 import { WeekAccordion } from './components/WeekAccordion';
 import { FormAnalysis } from './components/FormAnalysis';
-import { supabase } from './lib/supabase';
+import { api } from './lib/api';
 
 interface DbRow {
   id: string;
@@ -22,10 +22,8 @@ interface DbRow {
   avg_heart_rate?: number;
   comment?: string;
   strava_url?: string;
-  // BIGINT in Postgres. PostgREST and Realtime hand it over as a JSON number,
-  // which JS rounds past 2^53, so loadProgress also selects an exact text copy.
-  strava_activity_id?: number | string | null;
-  strava_activity_id_text?: string | null;
+  // Stored as text so 64-bit Strava ids survive JSON.
+  strava_activity_id?: string | null;
 }
 
 const ACTIVE_PLAN_KEY = 'activePlanId';
@@ -88,8 +86,7 @@ function App() {
     avgHeartRate: row.avg_heart_rate,
     comment: row.comment,
     stravaUrl: row.strava_url,
-    stravaActivityId: row.strava_activity_id_text
-      ?? (row.strava_activity_id != null ? String(row.strava_activity_id) : undefined),
+    stravaActivityId: row.strava_activity_id ?? undefined,
   });
 
   const insertSession = (
@@ -105,13 +102,11 @@ function App() {
 
   const loadProgress = useCallback(async () => {
     try {
-      const { data, error: dbError } = await supabase
-        .from('workout_progress')
-        .select('*, strava_activity_id_text:strava_activity_id::text');
+      const { data, error: dbError } = await api<DbRow[]>('GET', '/progress');
 
       if (dbError) {
         console.error('Error loading progress:', dbError);
-        setError(`Napaka pri povezavi: ${dbError.message}`);
+        setError(`Napaka pri povezavi: ${dbError}`);
         setLoading(false);
         return;
       }
@@ -135,7 +130,7 @@ function App() {
   }, []);
 
   const loadWeekOverrides = useCallback(async () => {
-    const { data } = await supabase.from('week_overrides').select('*');
+    const { data } = await api<{ plan_id?: string; week_num: number; phase?: string; focus?: string }[]>('GET', '/week-overrides');
     if (data) {
       const phases: Record<string, Record<number, string>> = {};
       const focuses: Record<string, Record<number, string>> = {};
@@ -156,55 +151,21 @@ function App() {
     loadWeekOverrides();
   }, [loadProgress, loadWeekOverrides]);
 
+  // Pick up edits made on another device when the tab comes back into view.
   useEffect(() => {
-    const channel = supabase
-      .channel('workout_progress_changes')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'workout_progress' },
-        (payload) => {
-          if (payload.eventType === 'DELETE') {
-            const oldRow = payload.old as Partial<DbRow>;
-            const planId = oldRow.plan_id || 'istrski-2026';
-            const sessionIndex = oldRow.session_index ?? 0;
-            const id = oldRow.id;
-            if (!id) return;
-            setProgressByPlan(prev => {
-              const planBucket = prev[planId];
-              if (!planBucket) return prev;
-              const existing = planBucket[id];
-              if (!existing) return prev;
-              const next = existing.filter(s => s.sessionIndex !== sessionIndex);
-              const newBucket: ProgressData = { ...planBucket };
-              if (next.length === 0) delete newBucket[id];
-              else newBucket[id] = next;
-              return { ...prev, [planId]: newBucket };
-            });
-            return;
-          }
-          if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
-            const row = payload.new as DbRow;
-            const planId = row.plan_id || 'istrski-2026';
-            const session = dbRowToSession(row);
-            setProgressByPlan(prev => ({
-              ...prev,
-              [planId]: insertSession(prev[planId] ?? {}, row.id, session),
-            }));
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') {
+        loadProgress();
+        loadWeekOverrides();
+      }
     };
-  }, []);
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, [loadProgress, loadWeekOverrides]);
 
   const saveSession = async (planId: string, key: string, data: WorkoutProgress) => {
     setSyncing(true);
-    const { error } = await supabase
-      .from('workout_progress')
-      .upsert({
+    const { error } = await api('PUT', '/progress', {
         id: key,
         plan_id: planId,
         session_index: data.sessionIndex,
@@ -220,8 +181,7 @@ function App() {
         comment: data.comment || null,
         strava_url: data.stravaUrl || null,
         strava_activity_id: data.stravaActivityId ?? null,
-        updated_at: new Date().toISOString(),
-      }, { onConflict: 'plan_id,id,session_index' });
+    });
 
     if (error) {
       console.error('Error saving session:', error);
@@ -277,12 +237,8 @@ function App() {
     });
 
     setSyncing(true);
-    const { error } = await supabase
-      .from('workout_progress')
-      .delete()
-      .eq('plan_id', activePlanId)
-      .eq('id', key)
-      .eq('session_index', sessionIndex);
+    const params = new URLSearchParams({ plan_id: activePlanId, id: key, session_index: String(sessionIndex) });
+    const { error } = await api('DELETE', `/progress?${params}`);
 
     if (error) {
       console.error('Error deleting session:', error);
@@ -295,12 +251,7 @@ function App() {
       ...prev,
       [activePlanId]: { ...(prev[activePlanId] ?? {}), [weekNum]: phase },
     }));
-    await supabase.from('week_overrides').upsert({
-      plan_id: activePlanId,
-      week_num: weekNum,
-      phase,
-      updated_at: new Date().toISOString(),
-    }, { onConflict: 'plan_id,week_num' });
+    await api('PUT', '/week-overrides', { plan_id: activePlanId, week_num: weekNum, phase });
   };
 
   const handleUpdateWeekFocus = async (weekNum: number, focus: string) => {
@@ -308,12 +259,7 @@ function App() {
       ...prev,
       [activePlanId]: { ...(prev[activePlanId] ?? {}), [weekNum]: focus },
     }));
-    await supabase.from('week_overrides').upsert({
-      plan_id: activePlanId,
-      week_num: weekNum,
-      focus,
-      updated_at: new Date().toISOString(),
-    }, { onConflict: 'plan_id,week_num' });
+    await api('PUT', '/week-overrides', { plan_id: activePlanId, week_num: weekNum, focus });
   };
 
   // Total "workouts" = sum of planned non-rest days across the plan.
@@ -356,7 +302,7 @@ function App() {
           <h1 className="text-xl font-bold text-red-700 mb-2">Napaka pri povezavi</h1>
           <p className="text-gray-600 mb-4">{error}</p>
           <p className="text-sm text-gray-500 mb-4">
-            Preveri, da je tabela <code className="bg-gray-100 px-1 rounded">workout_progress</code> ustvarjena v Supabase.
+            Preveri, da Cloudflare Worker <code className="bg-gray-100 px-1 rounded">running-app-api</code> teče.
           </p>
           <button
             onClick={() => {

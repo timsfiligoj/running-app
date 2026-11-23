@@ -35,7 +35,7 @@ Aplikacija za sledenje 11-tedenskemu programu priprave na Istrski polmaraton s c
 
 ### Integracije
 - **Strava integracija** - avtomatski uvoz podatkov iz Strava aktivnosti (razdalja, čas)
-- **Real-time sinhronizacija** - deli napredek z drugimi (Supabase)
+- **Sinhronizacija med napravami** - podatki se ob vrnitvi na zavihek osvežijo (Cloudflare D1)
 
 ### Ostalo
 - **Barvne oznake** - vsak tip treninga ima svojo barvo
@@ -59,7 +59,7 @@ Aplikacija za sledenje 11-tedenskemu programu priprave na Istrski polmaraton s c
 
 - **Frontend**: React 19 + TypeScript + Vite
 - **Styling**: Tailwind CSS v4
-- **Backend**: Supabase (PostgreSQL + Real-time)
+- **Backend**: Cloudflare Worker + D1 (SQLite), mapa `worker/`
 - **Hosting**: GitHub Pages
 
 ## Lokalni razvoj
@@ -75,23 +75,21 @@ npm run dev
 npm run build
 ```
 
-## Supabase Setup
+## Backend (Cloudflare)
 
-Tabela `workout_progress`:
+Worker `running-app-api` (https://running-app-api.emba-promocije.workers.dev) z bazo D1 `running-app`.
+Strava in Claude ključi so Worker secrets, nikoli v frontendu.
 
-```sql
-CREATE TABLE workout_progress (
-  id TEXT PRIMARY KEY,
-  completed BOOLEAN DEFAULT FALSE,
-  skipped BOOLEAN DEFAULT FALSE,
-  actual_workout TEXT DEFAULT '',
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
-ALTER PUBLICATION supabase_realtime ADD TABLE workout_progress;
-ALTER TABLE workout_progress ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Allow all" ON workout_progress FOR ALL USING (true);
+```bash
+cd worker
+npx wrangler deploy                                   # deploy Workerja
+npx wrangler secret put STRAVA_REFRESH_TOKEN          # nastavi/zamenjaj secret
+npx wrangler d1 execute running-app --remote --command "SELECT count(*) FROM workout_progress"
+npx wrangler d1 export running-app --remote --output backup.sql   # varnostna kopija
 ```
+
+Shema je v `worker/schema.sql`. Endpointi: `GET/PUT/DELETE /progress`, `GET/PUT /week-overrides`,
+`GET/PUT /analysis`, `POST /strava-activities`, `POST /fetch-strava`, `POST /analyze-run`.
 
 ## Struktura projekta
 
@@ -105,7 +103,7 @@ src/
 ├── data/
 │   └── trainingPlan.ts      # Podatki načrta
 ├── lib/
-│   ├── supabase.ts          # Supabase client
+│   ├── api.ts               # Client za Cloudflare Worker
 │   └── strava.ts            # Strava API helper
 ├── App.tsx                  # Glavna komponenta
 ├── main.tsx                 # Entry point

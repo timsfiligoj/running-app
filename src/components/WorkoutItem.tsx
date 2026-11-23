@@ -94,6 +94,7 @@ export function WorkoutItem({
   dayIndex,
   session,
   isGhost,
+  planId,
   onUpdate,
   onDelete,
 }: WorkoutItemProps) {
@@ -639,7 +640,7 @@ export function WorkoutItem({
         onClose={() => setShowAnalysis(false)}
         stravaUrl={localData.stravaUrl}
         date={date.toISOString().split('T')[0]}
-        workoutKey={`${weekNumber}-${dayIndex}-${session.sessionIndex}`}
+        workoutKey={`${planId}:${weekNumber}-${dayIndex}-${session.sessionIndex}`}
         workoutContext={{
           plannedWorkout: day.workout,
           runType: effectiveRunType,

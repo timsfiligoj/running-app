@@ -10,8 +10,7 @@
  */
 import fs from 'fs';
 
-const SUPABASE = 'https://vscticoufxoyxyhuzkeu.supabase.co/functions/v1';
-const KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZzY3RpY291ZnhveXh5aHV6a2V1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkzNTUzNDEsImV4cCI6MjA4NDkzMTM0MX0.1o0loHeC86OJ6LQ9UGeTfcedWkZIauxNsJfCMeddwiA';
+const API = process.env.API_URL ?? 'https://running-app-api.emba-promocije.workers.dev';
 
 const ISTRA = { block: 'istra', from: '2026-01-01', to: '2026-04-13', race: '2026-04-12' };
 const LJ    = { block: 'lj',    from: '2026-06-01', to: '2026-10-18', race: '2026-10-18' };
@@ -35,9 +34,9 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
  */
 const post = async (fn, body) => {
   for (let attempt = 0; ; attempt++) {
-    const res = await fetch(`${SUPABASE}/${fn}`, {
+    const res = await fetch(`${API}/${fn}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${KEY}`, apikey: KEY },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     });
     const text = await res.text();
