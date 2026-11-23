@@ -134,13 +134,14 @@ async function getStravaAccessToken(env: Env): Promise<string> {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      client_id: env.STRAVA_CLIENT_ID,
-      client_secret: env.STRAVA_CLIENT_SECRET,
-      refresh_token: env.STRAVA_REFRESH_TOKEN,
+      client_id: env.STRAVA_CLIENT_ID?.trim(),
+      client_secret: env.STRAVA_CLIENT_SECRET?.trim(),
+      refresh_token: env.STRAVA_REFRESH_TOKEN?.trim(),
       grant_type: 'refresh_token',
     }),
   });
-  if (!resp.ok) throw new Error(`Token refresh failed: ${resp.status}`);
+  // Strava's body names the bad field (client_id, client_secret or refresh_token).
+  if (!resp.ok) throw new Error(`Token refresh failed: ${resp.status} ${await resp.text()}`);
   const data = await resp.json() as { access_token: string };
   return data.access_token;
 }
@@ -349,7 +350,7 @@ async function analyzeRun(env: Env, body: Record<string, unknown>) {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'x-api-key': env.ANTHROPIC_API_KEY,
+      'x-api-key': env.ANTHROPIC_API_KEY.trim(),
       'anthropic-version': '2023-06-01',
     },
     body: JSON.stringify({
