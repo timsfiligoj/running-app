@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { trainingPlans } from './data/trainingPlans';
-import { ProgressData, WorkoutProgress, dayKey } from './types';
+import { ProgressData, WorkoutProgress, dayKey, plannedSessions, sessionsByPlanned } from './types';
 import { Header } from './components/Header';
 import { ProgressBar } from './components/ProgressBar';
 import { WeekAccordion } from './components/WeekAccordion';
@@ -209,7 +209,11 @@ function App() {
   const handleAddSession = async (weekNum: number, dayIndex: number) => {
     const key = dayKey(weekNum, dayIndex);
     const existing = progress[key] ?? [];
-    const nextIndex = existing.length === 0 ? 0 : Math.max(...existing.map(s => s.sessionIndex)) + 1;
+    // Skip past the planned sessions so an added activity doesn't take a planned slot.
+    const day = activePlan.weeks.find(w => w.week === weekNum)?.days[dayIndex];
+    const planned = day ? plannedSessions(day) : [];
+    const lastPlanned = planned.reduce((last, p, i) => (p.type !== 'rest' ? i : last), -1);
+    const nextIndex = Math.max(lastPlanned, ...existing.map(s => s.sessionIndex)) + 1;
     const newSession: WorkoutProgress = {
       sessionIndex: nextIndex,
       completed: false,
@@ -262,20 +266,14 @@ function App() {
     await api('PUT', '/week-overrides', { plan_id: activePlanId, week_num: weekNum, focus });
   };
 
-  // Total "workouts" = sum of planned non-rest days across the plan.
-  const totalWorkouts = activePlan.weeks.reduce(
-    (acc, week) => acc + week.days.filter(day => day.type !== 'rest').length,
-    0
+  // Workouts = planned non-rest sessions; one counts as completed if any session
+  // logged for it is completed.
+  const plannedWorkouts = activePlan.weeks.flatMap(week =>
+    week.days.flatMap((day, index) =>
+      sessionsByPlanned(day, progress[dayKey(week.week, index)] ?? []).filter(p => p.plan.type !== 'rest')),
   );
-
-  // A day counts as "completed" if at least one session is marked completed.
-  const completedWorkouts = activePlan.weeks.reduce((acc, week) => {
-    return acc + week.days.filter((day, index) => {
-      if (day.type === 'rest') return false;
-      const sessions = progress[dayKey(week.week, index)] ?? [];
-      return sessions.some(s => s.completed);
-    }).length;
-  }, 0);
+  const totalWorkouts = plannedWorkouts.length;
+  const completedWorkouts = plannedWorkouts.filter(p => p.sessions.some(s => s.completed)).length;
 
   // Total km across all sessions.
   const totalKm = Object.values(progress).reduce(

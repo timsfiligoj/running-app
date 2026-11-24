@@ -1,8 +1,34 @@
-export interface Day {
-  day: string;
+export interface PlannedSession {
   type: string;
   workout: string;
 }
+
+export interface Day extends PlannedSession {
+  day: string;
+  // Further planned sessions the same day (e.g. strength after a run). The day's own
+  // type/workout is session 0; extra[i] is session i + 1.
+  extra?: PlannedSession[];
+}
+
+/** Every planned session of a day, each as a Day so it can be rendered on its own. */
+export const plannedSessions = (day: Day): Day[] => [
+  day,
+  ...(day.extra ?? []).map(s => ({ day: day.day, ...s })),
+];
+
+/**
+ * Pairs each planned session of a day with the logged sessions that count for it:
+ * extra[i] with session i + 1; the main workout with session 0 and anything added
+ * beyond the plan. For a day without extras that is simply every session.
+ */
+export const sessionsByPlanned = (day: Day, sessions: WorkoutProgress[]) => {
+  const planned = plannedSessions(day);
+  return planned.map((plan, i) => ({
+    plan,
+    sessions: sessions.filter(s =>
+      i === 0 ? s.sessionIndex === 0 || s.sessionIndex >= planned.length : s.sessionIndex === i),
+  }));
+};
 
 export interface Week {
   week: number;

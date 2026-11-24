@@ -6,6 +6,8 @@ import {
   ActivityType,
   RunType,
   dayKey,
+  plannedSessions,
+  sessionsByPlanned,
   getDateForDay,
   formatDateShort,
 } from '../types';
@@ -45,11 +47,11 @@ const getDefaultsFromPlannedType = (plannedType: string): { activityType: Activi
   return { activityType: 'other' };
 };
 
-// Build a synthetic "ghost" session (no DB row yet) for an empty day with a planned workout.
-const buildGhostSession = (plannedType: string): WorkoutProgress => {
+// Build a synthetic "ghost" session (no DB row yet) for a planned workout not logged yet.
+const buildGhostSession = (plannedType: string, sessionIndex: number): WorkoutProgress => {
   const defaults = getDefaultsFromPlannedType(plannedType);
   return {
-    sessionIndex: 0,
+    sessionIndex,
     completed: false,
     activityType: defaults.activityType,
     runType: defaults.runType,
@@ -112,31 +114,22 @@ export function WeekAccordion({
   const effectivePhase = weekPhaseOverride || week.phase;
   const effectiveFocus = weekFocusOverride || week.focus;
 
-  // A day is "non-rest" if planned is non-rest OR any session is non-rest.
-  const isRestDay = (dayIndex: number) => {
-    const sessions = progress[dayKey(week.week, dayIndex)] ?? [];
-    if (sessions.length > 0) {
-      return sessions.every(s => (s.activityType ?? 'other') === 'rest');
-    }
-    return week.days[dayIndex].type === 'rest';
-  };
+  // Each planned session is a unit. It counts unless it is a planned rest with nothing
+  // logged, or everything logged for it is rest.
+  const units = week.days.flatMap((day, dayIndex) =>
+    sessionsByPlanned(day, progress[dayKey(week.week, dayIndex)] ?? []).filter(({ plan, sessions }) =>
+      sessions.length > 0
+        ? !sessions.every(s => (s.activityType ?? 'other') === 'rest')
+        : plan.type !== 'rest'),
+  );
 
-  const nonRestDayIndexes = week.days.map((_, i) => i).filter(i => !isRestDay(i));
+  // A unit is completed if any of its sessions is; "done" (for the week colour) if all
+  // of its sessions are completed or skipped and at least one exists.
+  const completedCount = units.filter(u => u.sessions.some(s => s.completed)).length;
+  const doneCount = units.filter(u =>
+    u.sessions.length > 0 && u.sessions.every(s => s.completed || s.skipped)).length;
 
-  // Day counts as completed if at least one session is completed.
-  const completedCount = nonRestDayIndexes.filter(i => {
-    const sessions = progress[dayKey(week.week, i)] ?? [];
-    return sessions.some(s => s.completed);
-  }).length;
-
-  // Day counts as "done" (for status color) if all sessions are completed or skipped, AND at least one exists.
-  const doneCount = nonRestDayIndexes.filter(i => {
-    const sessions = progress[dayKey(week.week, i)] ?? [];
-    if (sessions.length === 0) return false;
-    return sessions.every(s => s.completed || s.skipped);
-  }).length;
-
-  const totalCount = nonRestDayIndexes.length;
+  const totalCount = units.length;
   const isWeekDone = totalCount > 0 && doneCount === totalCount;
 
   const weekStatus = isWeekDone
@@ -306,9 +299,21 @@ export function WeekAccordion({
               const sessions = progress[key] ?? [];
               const date = getDateForDay(week.startDate, dayIndex);
 
-              // Empty day with a planned non-rest workout → show one "ghost" session that becomes real on edit.
-              const showGhost = sessions.length === 0 && day.type !== 'rest';
-              const ghost = showGhost ? buildGhostSession(day.type) : null;
+              // Planned session i pairs with the logged session of index i; one not logged
+              // yet shows as a "ghost" that becomes real on edit. Sessions added beyond the
+              // plan follow, described by the day's main workout.
+              const planned = plannedSessions(day);
+              const items = [
+                ...planned.map((p, i) => {
+                  const session = sessions.find(s => s.sessionIndex === i);
+                  if (session) return { plan: p, session, isGhost: false };
+                  if (p.type === 'rest') return null;
+                  return { plan: p, session: buildGhostSession(p.type, i), isGhost: true };
+                }),
+                ...sessions
+                  .filter(s => s.sessionIndex >= planned.length)
+                  .map(session => ({ plan: day, session, isGhost: false })),
+              ].filter((item): item is NonNullable<typeof item> => item !== null);
 
               return (
                 <div key={dayIndex} className="space-y-2">
@@ -317,39 +322,25 @@ export function WeekAccordion({
                     <div className="flex items-baseline gap-2 min-w-0">
                       <span className="font-bold text-gray-800">{day.day}</span>
                       <span className="text-xs text-gray-500">{formatDateShort(date)}</span>
-                      {day.type === 'rest' && sessions.length === 0 && (
+                      {items.length === 0 && (
                         <span className="text-xs text-gray-500 italic truncate">😴 {day.workout}</span>
                       )}
                     </div>
                   </div>
 
-                  {/* Sessions list (or ghost for empty non-rest days) */}
-                  {ghost ? (
+                  {items.map(({ plan, session, isGhost }) => (
                     <WorkoutItem
-                      day={day}
+                      key={session.sessionIndex}
+                      day={plan}
                       weekStartDate={week.startDate}
                       dayIndex={dayIndex}
-                      session={ghost}
-                      isGhost
+                      session={session}
+                      isGhost={isGhost}
                       planId={planId}
-                      onUpdate={(data) => onUpdateSession(week.week, dayIndex, ghost.sessionIndex, data)}
-                      onDelete={() => onDeleteSession(week.week, dayIndex, ghost.sessionIndex)}
+                      onUpdate={(data) => onUpdateSession(week.week, dayIndex, session.sessionIndex, data)}
+                      onDelete={() => onDeleteSession(week.week, dayIndex, session.sessionIndex)}
                     />
-                  ) : (
-                    sessions.map((session) => (
-                      <WorkoutItem
-                        key={session.sessionIndex}
-                        day={day}
-                        weekStartDate={week.startDate}
-                        dayIndex={dayIndex}
-                        session={session}
-                        isGhost={false}
-                        planId={planId}
-                        onUpdate={(data) => onUpdateSession(week.week, dayIndex, session.sessionIndex, data)}
-                        onDelete={() => onDeleteSession(week.week, dayIndex, session.sessionIndex)}
-                      />
-                    ))
-                  )}
+                  ))}
 
                   {/* Add session button */}
                   <button
