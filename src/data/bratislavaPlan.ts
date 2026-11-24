@@ -15,9 +15,14 @@ import { TrainingPlan } from '../types';
 //  - Kontrolni 30 km Ned 21.2. (16 km @ MP): če je lahek, cilj proti 3:10.
 //  - HM test Ned 7.3. (ali tekma, če se najde).
 //
-// Moč (Jakob Cigale): do 15.3. 2× na teden — Tor Legs + Plyo + Core (plyo od
-// januarja), Čet Legs + Core; stopnjuj ponovitve. Od 15.3. 1× na teden.
-// Zadnji lahek trening moči Čet 1.4. (10 dni pred tekmo).
+// Moč (Jakob Cigale, dopolnitev 24.11.):
+//  - Baza do začetka februarja (T1–T6): 3× na teden — Tor, Čet, Sob. Če je
+//    preveč, 2×. Tek ima prednost; izpuščen trening moči ni problem.
+//  - Glavni del do sredine marca (T7–T11): 2× na teden — Tor, Čet.
+//  - Zadnji mesec (od T12): 1× na teden, lahko z manj ponovitvami.
+//    Zadnji lahek trening moči Čet 1.4. (10 dni pred tekmo).
+//  - Stopnjevanje: vsak teden +2 ponovitvi; pri 12 nazaj na 8 in breme
+//    največ +5 kg. Plyo od januarja, postopoma in po občutku.
 // ============================================================
 
 export const bratislavaPlan: TrainingPlan = {
@@ -33,48 +38,48 @@ export const bratislavaPlan: TrainingPlan = {
       week: 1,
       title: '28. dec – 3. jan',
       phase: 'TEDEN 1: ZAČETEK BLOKA',
-      focus: 'Ritem 4 tekov na teden. Prvi long run 20 km. ~50 km',
+      focus: 'Ritem 4 tekov na teden. Moč 3× na teden (Tor, Čet, Sob). ~45 km',
       startDate: '2026-12-28',
       days: [
         { day: 'Pon', type: 'rest', workout: 'Počitek.' },
         { day: 'Tor', type: 'intervals', workout: '~10 km: 2 km WU + 6× 800 m @ 3:50 (p 2 min) + 2 km CD.', extra: [{ type: 'strength', workout: 'Legs + Core.' }] },
-        { day: 'Sre', type: 'easy', workout: '10 km lahko.', extra: [{ type: 'strength', workout: 'Core.' }] },
+        { day: 'Sre', type: 'easy', workout: '8 km lahko.', extra: [{ type: 'strength', workout: 'Core.' }] },
         { day: 'Čet', type: 'strength', workout: 'Legs + Core.' },
-        { day: 'Pet', type: 'easy', workout: '10 km lahko + 4× strides.' },
-        { day: 'Sob', type: 'rest', workout: 'Počitek.' },
-        { day: 'Ned', type: 'long', workout: '20 km lahko (5:10–5:30).' },
+        { day: 'Pet', type: 'easy', workout: '9 km lahko + 4× strides.' },
+        { day: 'Sob', type: 'strength', workout: 'Legs + Core.' },
+        { day: 'Ned', type: 'long', workout: '18 km lahko (5:10–5:30).' },
       ],
     },
     {
       week: 2,
       title: '4. jan – 10. jan',
       phase: 'TEDEN 2: PRVI MP',
-      focus: 'Prvi kilometri MP v long runu. Pliometrija od tega tedna. ~55 km',
+      focus: 'Prvi kilometri MP v long runu. Plyo od tega tedna, po občutku. ~51 km',
       startDate: '2027-01-04',
       days: [
         { day: 'Pon', type: 'rest', workout: 'Počitek.' },
         { day: 'Tor', type: 'intervals', workout: '~11 km: 2 km WU + 5× 1 km @ 3:55 (p 90 s) + 2 km CD.', extra: [{ type: 'strength', workout: 'Legs + Plyo + Core.' }] },
         { day: 'Sre', type: 'easy', workout: '10 km lahko.', extra: [{ type: 'strength', workout: 'Core.' }] },
         { day: 'Čet', type: 'strength', workout: 'Legs + Core.' },
-        { day: 'Pet', type: 'easy', workout: '12 km lahko + 4× strides.' },
-        { day: 'Sob', type: 'rest', workout: 'Počitek.' },
-        { day: 'Ned', type: 'long', workout: '22 km: 18 km lahko + 4 km @ MP 4:40.' },
+        { day: 'Pet', type: 'easy', workout: '10 km lahko + 4× strides.' },
+        { day: 'Sob', type: 'strength', workout: 'Legs + Core.' },
+        { day: 'Ned', type: 'long', workout: '20 km: 16 km lahko + 4 km @ MP 4:40.' },
       ],
     },
     {
       week: 3,
       title: '11. jan – 17. jan',
       phase: 'TEDEN 3: GRADNJA',
-      focus: 'Daljši intervali, long run 24 km. ~60 km',
+      focus: 'Daljši intervali, long run 22 km. ~57 km',
       startDate: '2027-01-11',
       days: [
         { day: 'Pon', type: 'rest', workout: 'Počitek.' },
         { day: 'Tor', type: 'intervals', workout: '~12 km: 2 km WU + 3× 2 km @ 4:00 (p 2 min) + 2 km CD.', extra: [{ type: 'strength', workout: 'Legs + Plyo + Core.' }] },
-        { day: 'Sre', type: 'easy', workout: '12 km lahko.', extra: [{ type: 'strength', workout: 'Core.' }] },
+        { day: 'Sre', type: 'easy', workout: '11 km lahko.', extra: [{ type: 'strength', workout: 'Core.' }] },
         { day: 'Čet', type: 'strength', workout: 'Legs + Core.', extra: [{ type: 'easy', workout: 'Opcijsko · 6 km lahko.' }] },
         { day: 'Pet', type: 'easy', workout: '12 km lahko + 4× strides.' },
-        { day: 'Sob', type: 'rest', workout: 'Počitek.' },
-        { day: 'Ned', type: 'long', workout: '24 km lahko, zadnje 3 km postopoma do MP 4:40.' },
+        { day: 'Sob', type: 'strength', workout: 'Legs + Core.' },
+        { day: 'Ned', type: 'long', workout: '22 km lahko, zadnje 3 km postopoma do MP 4:40.' },
       ],
     },
     {
@@ -89,7 +94,7 @@ export const bratislavaPlan: TrainingPlan = {
         { day: 'Sre', type: 'easy', workout: '10 km lahko.', extra: [{ type: 'strength', workout: 'Core.' }] },
         { day: 'Čet', type: 'strength', workout: 'Legs + Core.' },
         { day: 'Pet', type: 'easy', workout: '10 km lahko + 4× strides.' },
-        { day: 'Sob', type: 'rest', workout: 'Počitek.' },
+        { day: 'Sob', type: 'strength', workout: 'Legs + Core.' },
         { day: 'Ned', type: 'long', workout: '18 km lahko.' },
       ],
     },
@@ -105,7 +110,7 @@ export const bratislavaPlan: TrainingPlan = {
         { day: 'Sre', type: 'easy', workout: '12 km lahko.', extra: [{ type: 'strength', workout: 'Core.' }] },
         { day: 'Čet', type: 'strength', workout: 'Legs + Core.', extra: [{ type: 'easy', workout: 'Opcijsko · 6 km lahko.' }] },
         { day: 'Pet', type: 'easy', workout: '12 km lahko + 4× strides.' },
-        { day: 'Sob', type: 'rest', workout: 'Počitek.' },
+        { day: 'Sob', type: 'strength', workout: 'Legs + Core.' },
         { day: 'Ned', type: 'long', workout: '26 km: 14 km lahko + 10 km @ MP 4:40 + 2 km CD. Gel vsakih 5–6 km.' },
       ],
     },
@@ -121,7 +126,7 @@ export const bratislavaPlan: TrainingPlan = {
         { day: 'Sre', type: 'easy', workout: '12 km lahko.', extra: [{ type: 'strength', workout: 'Core.' }] },
         { day: 'Čet', type: 'strength', workout: 'Legs + Core.', extra: [{ type: 'easy', workout: 'Opcijsko · 6 km lahko.' }] },
         { day: 'Pet', type: 'easy', workout: '14 km lahko + 4× strides.' },
-        { day: 'Sob', type: 'rest', workout: 'Počitek.' },
+        { day: 'Sob', type: 'strength', workout: 'Legs + Core.' },
         { day: 'Ned', type: 'long', workout: '28 km lahko (5:10–5:25), zadnja 2 km @ MP 4:40.' },
       ],
     },
@@ -129,7 +134,7 @@ export const bratislavaPlan: TrainingPlan = {
       week: 7,
       title: '8. feb – 14. feb',
       phase: 'TEDEN 7: MP V KOSIH',
-      focus: '15 km MP v treh kosih. ~68 km',
+      focus: '15 km MP v treh kosih. Moč od zdaj 2× na teden (Tor, Čet). ~68 km',
       startDate: '2027-02-08',
       days: [
         { day: 'Pon', type: 'rest', workout: 'Počitek.' },
@@ -213,7 +218,7 @@ export const bratislavaPlan: TrainingPlan = {
       startDate: '2027-03-15',
       days: [
         { day: 'Pon', type: 'rest', workout: 'Počitek.' },
-        { day: 'Tor', type: 'intervals', workout: '~15 km: 2 km WU + 5× 2 km @ 3:58 (p 2 min) + 2 km CD.', extra: [{ type: 'strength', workout: 'Legs + Plyo + Core.' }] },
+        { day: 'Tor', type: 'intervals', workout: '~15 km: 2 km WU + 5× 2 km @ 3:58 (p 2 min) + 2 km CD.', extra: [{ type: 'strength', workout: 'Legs + Core (manj ponovitev).' }] },
         { day: 'Sre', type: 'easy', workout: '14 km lahko.', extra: [{ type: 'strength', workout: 'Core.' }] },
         { day: 'Čet', type: 'rest', workout: 'Opcijsko: 6 km lahko.' },
         { day: 'Pet', type: 'easy', workout: '16 km lahko + 4× strides.' },
@@ -229,7 +234,7 @@ export const bratislavaPlan: TrainingPlan = {
       startDate: '2027-03-22',
       days: [
         { day: 'Pon', type: 'rest', workout: 'Počitek.' },
-        { day: 'Tor', type: 'intervals', workout: '~11 km: 2 km WU + 6× 1 km @ 3:52 (p 90 s) + 2 km CD.', extra: [{ type: 'strength', workout: 'Legs + Core.' }] },
+        { day: 'Tor', type: 'intervals', workout: '~11 km: 2 km WU + 6× 1 km @ 3:52 (p 90 s) + 2 km CD.', extra: [{ type: 'strength', workout: 'Legs + Core (manj ponovitev).' }] },
         { day: 'Sre', type: 'easy', workout: '12 km lahko.', extra: [{ type: 'strength', workout: 'Core.' }] },
         { day: 'Čet', type: 'rest', workout: 'Počitek.' },
         { day: 'Pet', type: 'easy', workout: '14 km lahko + 4× strides.' },
