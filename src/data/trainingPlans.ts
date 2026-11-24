@@ -321,10 +321,14 @@ export const tekTrojkPlan: TrainingPlan = {
 import { bazaPbPlan } from './cyclePlans';
 import { palmanovaPlan } from './palmanovaPlan';
 import { ljMaratonPlan } from './ljMaratonPlan';
+import { bazaZimaPlan } from './bazaZimaPlan';
+import { bratislavaPlan } from './bratislavaPlan';
 
 // Order: current focus first, then later races, then historical
 export const trainingPlans: TrainingPlan[] = [
   palmanovaPlan,   // A-race: Palmanova HM 29.11.2026 (trenutni fokus)
+  bazaZimaPlan,    // Baza po Palmanovi 30.11.–27.12.2026
+  bratislavaPlan,  // Bratislava maraton 11.4.2027 (blok od 28.12.)
   ljMaratonPlan,   // LJ polmaraton 18.10.2026 — 1:29:51 ✅ sub-1:30
   bazaPbPlan,      // "LJ Baza" — bazni blok (pomlad/poletje 2026)
   tekTrojkPlan,    // zgodovina
